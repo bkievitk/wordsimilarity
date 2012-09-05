@@ -207,64 +207,71 @@ public class AdvancedMenu {
 				});
 			file.add(save);
 			
+			final javax.swing.filechooser.FileFilter fullFilter = new javax.swing.filechooser.FileFilter() {
+				public boolean accept(File arg0) {	return arg0.getName().endsWith(".w2w") || arg0.isDirectory();	}
+				public String getDescription() {	return "Binary (.w2w)";	}							
+			};
+
+			final javax.swing.filechooser.FileFilter csvFilter = new javax.swing.filechooser.FileFilter() {
+				public boolean accept(File arg0) {	return arg0.getName().endsWith(".csv") || arg0.isDirectory();	}
+				public String getDescription() {	return "Comma Seperated Matrix File (.csv)";	}							
+			};
+
+			final javax.swing.filechooser.FileFilter imagesFilter = new javax.swing.filechooser.FileFilter() {
+				public boolean accept(File arg0) {	return arg0.isDirectory();	}
+				public String getDescription() {	return "Image Directory (dir)";	}							
+			};
+
+			final javax.swing.filechooser.FileFilter compressedFilter = new javax.swing.filechooser.FileFilter() {
+				public boolean accept(File arg0) {	return arg0.getName().endsWith(".cmp") || arg0.isDirectory();	}
+				public String getDescription() {	return "Compressed (.cmp)";	}	
+			};
+			
+			final javax.swing.filechooser.FileFilter wordSimilarityFilter = new javax.swing.filechooser.FileFilter() {
+				public boolean accept(File arg0) {	return arg0.getName().endsWith(".csv") || arg0.isDirectory();	}
+				public String getDescription() {	return "Word Similarity (.csv)";	}	
+			};
+
+			// Create file chooser.
+			final javax.swing.filechooser.FileFilter[] selectedFilter = new javax.swing.filechooser.FileFilter[1];
+			final JFileChooser chooser = new JFileChooser(new File("."));
+			chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+			chooser.addPropertyChangeListener(new PropertyChangeListener() {
+				public void propertyChange(PropertyChangeEvent arg0) {
+					if(arg0.getPropertyName() == JFileChooser.FILE_FILTER_CHANGED_PROPERTY) {
+						selectedFilter[0] = (javax.swing.filechooser.FileFilter)arg0.getNewValue();
+					}
+				}
+			});
+
+			// Add filters.
+			chooser.setAcceptAllFileFilterUsed(false);		
+			chooser.addChoosableFileFilter(fullFilter);		
+			chooser.addChoosableFileFilter(csvFilter);		
+			chooser.addChoosableFileFilter(imagesFilter);		
+			chooser.addChoosableFileFilter(wordSimilarityFilter);	
+			chooser.addChoosableFileFilter(compressedFilter);	
+			
 			// Load menu.
 			JMenuItem load = new JMenuItem("Load");
-				load.addActionListener(new ActionListener() {
-					
+				load.addActionListener(new ActionListener() {					
 					public void actionPerformed(ActionEvent arg0) {
 						
-						javax.swing.filechooser.FileFilter full = new javax.swing.filechooser.FileFilter() {
-							public boolean accept(File arg0) {	return arg0.getName().endsWith(".w2w") || arg0.isDirectory();	}
-							public String getDescription() {	return "Binary (.w2w)";	}							
-						};
-
-						javax.swing.filechooser.FileFilter csv = new javax.swing.filechooser.FileFilter() {
-							public boolean accept(File arg0) {	return arg0.getName().endsWith(".csv") || arg0.isDirectory();	}
-							public String getDescription() {	return "Comma Seperated Matrix File (.csv)";	}							
-						};
-
-						javax.swing.filechooser.FileFilter images = new javax.swing.filechooser.FileFilter() {
-							public boolean accept(File arg0) {	return arg0.isDirectory();	}
-							public String getDescription() {	return "Image Directory (dir)";	}							
-						};
-						
-						javax.swing.filechooser.FileFilter compressed = new javax.swing.filechooser.FileFilter() {
-							public boolean accept(File arg0) {	return arg0.getName().endsWith(".cmp") || arg0.isDirectory();	}
-							public String getDescription() {	return "Compressed (.cmp)";	}	
-						};
-
-						// Create file chooser.
-						final javax.swing.filechooser.FileFilter[] selectedFilter = new javax.swing.filechooser.FileFilter[1];
-						JFileChooser chooser = new JFileChooser(new File("."));
-						chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-						chooser.addPropertyChangeListener(new PropertyChangeListener() {
-							public void propertyChange(PropertyChangeEvent arg0) {
-								if(arg0.getPropertyName() == JFileChooser.FILE_FILTER_CHANGED_PROPERTY) {
-									selectedFilter[0] = (javax.swing.filechooser.FileFilter)arg0.getNewValue();
-								}
-							}
-						});
-
-						// Add filters.
-						chooser.setAcceptAllFileFilterUsed(false);		
-						chooser.addChoosableFileFilter(full);		
-						chooser.addChoosableFileFilter(csv);		
-						chooser.addChoosableFileFilter(images);		
-						chooser.addChoosableFileFilter(compressed);	
-
 						// On complete.
 						if(chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
 							try {
 								File file = chooser.getSelectedFile();			
-								if(selectedFilter[0] == full) {
+								if(selectedFilter[0] == fullFilter) {
 									IO.loadWorkSpace(wordMap, new BufferedInputStream(new FileInputStream(file)));				
-								} else if(selectedFilter[0] == csv) {
+								} else if(selectedFilter[0] == csvFilter) {
 									IO.loadCSV(wordMap, new BufferedReader(new FileReader(file)));
-								} else if(selectedFilter[0] == images) {
+								} else if(selectedFilter[0] == imagesFilter) {
 									IO.loadImages(wordMap, file);
 									main.visualizationChanged();
-								} else if(selectedFilter[0] == compressed) {
+								} else if(selectedFilter[0] == compressedFilter) {
 									IO.loadCMP(wordMap, new BufferedInputStream(new FileInputStream(file)));
+								} else if(selectedFilter[0] == wordSimilarityFilter) {
+									IO.loadWordSimilarity(wordMap, file);
 								}
 							} catch (IOException e) {
 								e.printStackTrace();

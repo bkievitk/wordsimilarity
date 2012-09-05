@@ -2,6 +2,7 @@ package gui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.GridLayout;
@@ -9,11 +10,16 @@ import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Set;
 import java.util.Vector;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import relations.WordRelator;
 import tools.KBox;
@@ -35,6 +41,284 @@ public class NetworkTools extends JTabbedPane {
 		addTab("Statistics",statisticsPanel());
 		addTab("Word",wordPanel());
 		addTab("Scatter Plot",scatterPanel());
+		addTab("Custom",customPanel());
+	}
+	
+	/*
+	public static void main(String[] args) {
+		MainGUIExternal gui = new MainGUIExternal(false);	
+		IO.loadWordSimilarity(gui.wordMap, new File("C:/Users/bkiev_000/Desktop/Brent/metaphysicsIEP.csv"));
+		IO.loadWordSimilarity(gui.wordMap, new File("C:/Users/bkiev_000/Desktop/Brent/metaphysicsSEP.csv"));
+		IO.loadWordSimilarity(gui.wordMap, new File("C:/Users/bkiev_000/Desktop/Brent/kantIEP.csv"));
+		IO.loadWordSimilarity(gui.wordMap, new File("C:/Users/bkiev_000/Desktop/Brent/kantSEP.csv"));		
+	}
+	*/
+
+	private static final int SELECT_UNION = 0;
+	private static final int SELECT_FIRST = 1;
+	private static final int SELECT_AVERAGE = 2;
+	private static final int SELECT_INTERSECTION = 3;
+	
+	private double[] customUpdate(JTextArea text, int min, int max, WordRelator wr1, WordRelator wr2, String targetWord, int wordSelect) {
+		
+		// Get the top n results for both comparators.
+		
+		KBox<String> box1 = new KBox<String>(max, true);		
+		KBox<String> box2 = new KBox<String>(max, true);
+		
+		if(wordSelect == SELECT_AVERAGE) {
+			for(String word : wr1.getWords()) {
+				box1.add(new WeightedObject<String>(word, 
+						wr1.getDistance(targetWord, word) +
+						wr2.getDistance(targetWord, word)));
+			}
+		} else {
+			for(String word : wr1.getWords()) {
+				box1.add(new WeightedObject<String>(word, wr1.getDistance(targetWord, word)));
+			}			
+			for(String word : wr2.getWords()) {
+				box2.add(new WeightedObject<String>(word, wr2.getDistance(targetWord, word)));
+			}
+		}
+		
+		// Clear text.
+		text.setText("");
+		
+		// Entry for each result.
+		double[] results = new double[max-min+1];
+		
+		
+		// For each n.
+		for(int n=min;n<=max;n++) {
+			
+			String[] topWords = null;
+			
+			
+			switch(wordSelect) {
+				case SELECT_UNION:
+					
+					// Add words that are in the top n of either comparator.
+					HashSet<String> words = new HashSet<String>();
+					for(int i=0;i<n;i++) {
+						
+						// Comparator 1
+						String word = box1.getObject(i).object;
+						if(word != null) {
+							words.add(word);
+						}
+
+						// Comparator 2
+						word = box2.getObject(i).object;
+						if(word != null) {
+							words.add(word);
+						}
+					}	
+					
+					// To list.
+					topWords = words.toArray(new String[0]);
+				break;
+				
+				case SELECT_FIRST:
+
+					// Add all words that are in the top n of the first comparator.
+					words = new HashSet<String>();
+					for(int i=0;i<n;i++) {
+						String word = box1.getObject(i).object;
+						if(word != null) {
+							words.add(word);
+						}
+					}
+					
+					// To list
+					topWords = words.toArray(new String[0]);					
+				break;
+				
+				case SELECT_AVERAGE:
+					
+					// Actually average
+					topWords = new String[Math.min(n, box1.size())];
+					for(int i=0;i<topWords.length;i++) {
+						topWords[i] = box1.getObject(i).object;
+					}
+					
+				break;
+				case SELECT_INTERSECTION:
+
+					HashSet<String> w1 = new HashSet<String>();
+					HashSet<String> w2 = new HashSet<String>();
+
+					for(int i=0;i<n;i++) {
+						String word = box1.getObject(i).object;
+						if(word != null) {
+							w1.add(word);
+						}
+						word = box2.getObject(i).object;
+						if(word != null) {
+							w2.add(word);
+						}
+					}
+					
+					w1.retainAll(w2);
+
+					// To list
+					topWords = w1.toArray(new String[0]);
+					
+				break;
+			}
+			
+			int count = topWords.length;
+			
+			if(count > 0) {
+				
+				
+				// Get new ranks.
+				WeightedObject<String>[] rank1 = new WeightedObject[count];
+				for(int j=0;j<topWords.length;j++) {
+					rank1[j] = new WeightedObject<String>(topWords[j], wr1.getDistance(targetWord, topWords[j]));
+				}				
+				Arrays.sort(rank1);				
+				Hashtable<String,Integer> rank1_a = new Hashtable<String,Integer>();
+				for(int j=0;j<topWords.length;j++) {
+					rank1_a.put(rank1[j].object, j + 1);
+				}
+				
+				WeightedObject<String>[] rank2 = new WeightedObject[count];
+				for(int j=0;j<topWords.length;j++) {
+					rank2[j] = new WeightedObject<String>(topWords[j], wr2.getDistance(targetWord, topWords[j]));
+				}				
+				Arrays.sort(rank2);				
+				Hashtable<String,Integer> rank2_a = new Hashtable<String,Integer>();
+				for(int j=0;j<topWords.length;j++) {
+					rank2_a.put(rank2[j].object, j + 1);
+				}
+				
+				// Get spearman.
+				double sumSqr = 0;
+				for(int j=0;j<count;j++) {
+					Integer rank1value = rank1_a.get(topWords[j]);
+					Integer rank2value = rank2_a.get(topWords[j]);
+					if(rank1value != null && rank2value != null) {
+						int diff = rank1value - rank2value;
+						sumSqr += diff * diff;
+					}
+				}
+				double countD = (double)count;
+				double val = 1 - 6.0 * sumSqr / (countD * (countD * countD - 1.0));
+				text.append(val + ",");					
+				
+				results[n-min] = val;
+			} else {
+				results[n-min] = -100;
+			}
+		}
+		
+		return results;
+	}
+	
+	public Container customPanel() {
+		//JPanel ret = new JPanel(new GridLayout(0,1));
+		Container ret = Box.createVerticalBox();
+		
+		JButton run = new JButton("run");
+		ret.add(run);
+		
+		final JTextArea text = new JTextArea();
+		text.setPreferredSize(new Dimension(0,20));
+		ret.add(PanelTools.addLabel("output values:", text, BorderLayout.WEST));
+		
+		final BufferedImage image = new BufferedImage(500,500,BufferedImage.TYPE_INT_RGB);
+		
+		final JPanel panel = new JPanel() {
+			private static final long serialVersionUID = -1143203678271329780L;
+			public void paintComponent(Graphics g) {
+				super.paintComponent(g);
+				g.drawImage(image, 0, 0, this);
+			}
+		};
+		panel.setPreferredSize(new Dimension(0,500));
+		ret.add(panel);
+		
+		final JSlider minSlider = new JSlider(2,5000);
+		final JSlider maxSlider = new JSlider(2,5000);
+		ret.add(PanelTools.addLabel("min", minSlider, BorderLayout.WEST));
+		ret.add(PanelTools.addLabel("max", maxSlider, BorderLayout.WEST));
+		
+		final JTextField word = new JTextField();
+		word.setPreferredSize(new Dimension(0,20));
+		final JComboBox<?> relator1 = wordMap.getComboComparators();
+		final JComboBox<?> relator2 = wordMap.getComboComparators();
+		final JCheckBox log = new JCheckBox("Logarithmic X");
+		
+		final JPanel selectPanel = new JPanel(new GridLayout(0,1));
+		final JRadioButton selectUnion = new JRadioButton("union", true);
+		final JRadioButton selectFirst = new JRadioButton("first");
+		final JRadioButton selectAverage = new JRadioButton("average");
+		final JRadioButton selectIntersection = new JRadioButton("intersection");
+		selectPanel.add(new JLabel("word selection type"));
+		selectPanel.add(selectUnion);
+		selectPanel.add(selectFirst);
+		selectPanel.add(selectAverage);
+		selectPanel.add(selectIntersection);		
+		ButtonGroup selectGroup = new ButtonGroup();
+		selectGroup.add(selectUnion);
+		selectGroup.add(selectFirst);
+		selectGroup.add(selectAverage);
+		selectGroup.add(selectIntersection);
+		
+		ret.add(PanelTools.addLabel("target word", word, BorderLayout.WEST));
+		ret.add(relator1);
+		ret.add(relator2);
+		ret.add(log);
+		ret.add(selectPanel);		
+		
+		run.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+
+				int min = minSlider.getValue();
+				int max = maxSlider.getValue();
+				
+				int selectType = -1;
+				if(selectUnion.isSelected()) {
+					selectType = SELECT_UNION;
+				} else if(selectFirst.isSelected()) {
+					selectType = SELECT_FIRST;
+				} else if(selectAverage.isSelected()) {
+					selectType = SELECT_AVERAGE;
+				} else if(selectIntersection.isSelected()) {
+					selectType = SELECT_INTERSECTION;
+				}
+				
+				if(max > min) {
+					double[] results = customUpdate(text, min, max, 
+							(WordRelator)relator1.getSelectedItem(), 
+							(WordRelator)relator2.getSelectedItem(), 
+							word.getText(), selectType);
+					
+					
+					double[] xs = new double[max-min+1];
+					
+					if(log.isSelected()) {
+						for(int i=0;i<=max-min;i++) {
+							xs[i] = Math.log((i+1));
+						}				
+					} else {
+						for(int i=0;i<=max-min;i++) {
+							xs[i] = i;
+						}				
+					}
+					
+					Graphics g = image.getGraphics();
+					g.setColor(Color.WHITE);
+					g.fillRect(0, 0, panel.getWidth(), panel.getHeight());
+					g.setColor(Color.BLACK);
+					Stats.showGraph(g, new Rectangle(0,0,panel.getWidth(),panel.getHeight()), xs, results);
+					panel.repaint();
+				}
+			}
+		});
+		
+		
+		return ret;
 	}
 
 	public JPanel scatterPanel() {

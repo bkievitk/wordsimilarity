@@ -1,5 +1,6 @@
 package tools;
 
+import java.lang.reflect.Array;
 import java.util.Vector;
 
 /**
@@ -44,6 +45,19 @@ public class KBox<V> {
     		objects[i] = this.objects[i];
     	}
     	return objects;
+    }
+    
+    public V[] getRankObjects() {
+    	if(size > 0) {
+        	@SuppressWarnings("unchecked")
+			V[] objects = (V[]) Array.newInstance(this.objects[0].object.getClass(),size);
+	    	for(int i=0;i<size;i++) {
+	    		objects[i] = this.objects[i].object;
+	    	}
+	    	return objects;
+    	} else {
+    		return null;
+    	}
     }
     
     /**
