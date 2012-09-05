@@ -13,6 +13,7 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 
 import relations.WordRelator;
+import relations.helpers.WordRelaitonSingleWord;
 import relations.helpers.WordRelationCrystalized;
 import tools.PanelTools;
 import tools.VerticalLayout;
@@ -206,7 +207,7 @@ public class IO {
 			
 			panel.add(PanelTools.wrappingText("Select save type."));
 			String[] types = {"short","double"};
-			final JComboBox type = new JComboBox(types);
+			final JComboBox<?> type = new JComboBox(types);
 			panel.add(type);
 
 			final JLabel message = new JLabel();
@@ -297,6 +298,44 @@ public class IO {
 			}
 			wordMap.setRelatorStatus(crystalized, true);
 			wordMap.addRelatorWords(crystalized);									
+		}
+	}
+
+	
+	public static void loadWordSimilarity(WordMap wordMap, File file) {
+		try {
+			BufferedReader r = new BufferedReader(new FileReader(file));
+			String cmpWrd = r.readLine().split(" +")[0];
+			String line;
+			int i = 0;
+			
+			WordRelaitonSingleWord crystalized = new WordRelaitonSingleWord(Color.BLACK,file.getName(),wordMap,cmpWrd);
+			crystalized.wordToInt = new Hashtable<String,Integer>();
+			crystalized.wordToInt.put(cmpWrd, i);
+			Vector<Double> values = new Vector<Double>();
+			values.add(1.0);
+			
+			while((line = r.readLine()) != null) {
+				i++;
+				String[] strs = line.split(" +");
+				String word = strs[0];
+				double value = Double.parseDouble(strs[1]);
+				crystalized.wordToInt.put(word,i);
+				values.add(value);
+			}
+			i++;
+			
+			crystalized.weights = new double[i];
+			for(int j=0;j<i;j++) {
+				crystalized.weights[j] = values.get(j);
+			}
+			wordMap.setRelatorStatus(crystalized, true);
+			wordMap.addRelatorWords(crystalized);	
+			
+			r.close();
+			
+		} catch(IOException e) {
+			e.printStackTrace();
 		}
 	}
 	
