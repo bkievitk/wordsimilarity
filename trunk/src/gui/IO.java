@@ -207,7 +207,7 @@ public class IO {
 			
 			panel.add(PanelTools.wrappingText("Select save type."));
 			String[] types = {"short","double"};
-			final JComboBox<?> type = new JComboBox(types);
+			final JComboBox type = new JComboBox(types);
 			panel.add(type);
 
 			final JLabel message = new JLabel();
