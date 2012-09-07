@@ -41,10 +41,9 @@ public class NetworkTools extends JTabbedPane {
 		addTab("Statistics",statisticsPanel());
 		addTab("Word",wordPanel());
 		addTab("Scatter Plot",scatterPanel());
-		addTab("Custom",customPanel());
+		addTab("Size vs Word Similarity",wordSimilarityOverSetSizeContainer());
 	}
 	
-	/*
 	public static void main(String[] args) {
 		MainGUIExternal gui = new MainGUIExternal(false);	
 		IO.loadWordSimilarity(gui.wordMap, new File("C:/Users/bkiev_000/Desktop/Brent/metaphysicsIEP.csv"));
@@ -52,17 +51,16 @@ public class NetworkTools extends JTabbedPane {
 		IO.loadWordSimilarity(gui.wordMap, new File("C:/Users/bkiev_000/Desktop/Brent/kantIEP.csv"));
 		IO.loadWordSimilarity(gui.wordMap, new File("C:/Users/bkiev_000/Desktop/Brent/kantSEP.csv"));		
 	}
-	*/
 
 	private static final int SELECT_UNION = 0;
 	private static final int SELECT_FIRST = 1;
 	private static final int SELECT_AVERAGE = 2;
 	private static final int SELECT_INTERSECTION = 3;
-	
-	private double[] customUpdate(JTextArea text, int min, int max, WordRelator wr1, WordRelator wr2, String targetWord, int wordSelect) {
+	private static final String[] SELECT_NAMES = {"Union","First","Average","Intersection"};
 		
-		// Get the top n results for both comparators.
+	private double[] wordSimilarityOverSetSize(JTextArea text, int min, int max, WordRelator wr1, WordRelator wr2, String targetWord, int wordSelect, int similarityMeasure) {
 		
+		// Get the top n results for both comparators.		
 		KBox<String> box1 = new KBox<String>(max, true);		
 		KBox<String> box2 = new KBox<String>(max, true);
 		
@@ -169,43 +167,77 @@ public class NetworkTools extends JTabbedPane {
 			int count = topWords.length;
 			
 			if(count > 0) {
-				
-				
-				// Get new ranks.
+								
+				// Get new ranks for list 1.
 				WeightedObject<String>[] rank1 = new WeightedObject[count];
 				for(int j=0;j<topWords.length;j++) {
 					rank1[j] = new WeightedObject<String>(topWords[j], wr1.getDistance(targetWord, topWords[j]));
 				}				
-				Arrays.sort(rank1);				
-				Hashtable<String,Integer> rank1_a = new Hashtable<String,Integer>();
-				for(int j=0;j<topWords.length;j++) {
-					rank1_a.put(rank1[j].object, j + 1);
-				}
+				Arrays.sort(rank1);		
 				
+				// Get new ranks for list 2.
 				WeightedObject<String>[] rank2 = new WeightedObject[count];
 				for(int j=0;j<topWords.length;j++) {
 					rank2[j] = new WeightedObject<String>(topWords[j], wr2.getDistance(targetWord, topWords[j]));
 				}				
-				Arrays.sort(rank2);				
-				Hashtable<String,Integer> rank2_a = new Hashtable<String,Integer>();
-				for(int j=0;j<topWords.length;j++) {
+				Arrays.sort(rank2);	
+				
+				
+				Hashtable<Object,Integer> rank2_a = new Hashtable<Object,Integer>();
+				for(int j=0;j<rank2.length;j++) {
 					rank2_a.put(rank2[j].object, j + 1);
 				}
 				
-				// Get spearman.
-				double sumSqr = 0;
-				for(int j=0;j<count;j++) {
-					Integer rank1value = rank1_a.get(topWords[j]);
-					Integer rank2value = rank2_a.get(topWords[j]);
-					if(rank1value != null && rank2value != null) {
-						int diff = rank1value - rank2value;
-						sumSqr += diff * diff;
-					}
+				int[] p1 = new int[rank1.length];
+				for(int i=0;i<p1.length;i++) {
+					p1[i] = i;
 				}
-				double countD = (double)count;
-				double val = 1 - 6.0 * sumSqr / (countD * (countD * countD - 1.0));
-				text.append(val + ",");					
 				
+				int[] p2 = new int[rank1.length];
+				for(int i=0;i<p1.length;i++) {
+					p2[i] = rank2_a.get(rank1[i].object) - 1;
+				}
+				
+				double val = Correlation.distance(p1, p2, similarityMeasure);
+				
+				/*
+				switch(similarityMeasure) {
+					case SIMILARITY_SPEARMAN:
+						
+						// Get spearman.
+						double sumSqr = 0;
+						for(int j=0;j<count;j++) {
+							Integer rank1value = rank1_a.get(topWords[j]);
+							Integer rank2value = rank2_a.get(topWords[j]);
+							if(rank1value != null && rank2value != null) {
+								int diff = rank1value - rank2value;
+								sumSqr += diff * diff;
+							}
+						}
+						double countD = (double)count;
+						val = 1 - 6.0 * sumSqr / (countD * (countD * countD - 1.0));
+					break;
+					case SIMILARITY_KENDALL_TAU:
+						
+						// Get Kendall tau.
+						int concordant = 0;
+						for(int j=0;j<count;j++) {
+							int rank1value = rank1_a.get(topWords[j]);
+							int rank2value = rank2_a.get(topWords[j]);
+							if(rank1value == rank2value) {
+								concordant ++;
+							}
+						}
+						countD = (double)count;
+						val = (2 * concordant - countD)/(.5 * countD * (countD - 1));
+						
+					break;
+					case SIMILARITY_GOODMAN_KRUSKAL:
+					break;
+				}*/
+				
+				// Save results.
+				text.append(val + ",");
 				results[n-min] = val;
 			} else {
 				results[n-min] = -100;
@@ -215,7 +247,7 @@ public class NetworkTools extends JTabbedPane {
 		return results;
 	}
 	
-	public Container customPanel() {
+	public Container wordSimilarityOverSetSizeContainer() {
 		//JPanel ret = new JPanel(new GridLayout(0,1));
 		Container ret = Box.createVerticalBox();
 		
@@ -249,27 +281,40 @@ public class NetworkTools extends JTabbedPane {
 		final JComboBox<?> relator2 = wordMap.getComboComparators();
 		final JCheckBox log = new JCheckBox("Logarithmic X");
 		
-		final JPanel selectPanel = new JPanel(new GridLayout(0,1));
-		final JRadioButton selectUnion = new JRadioButton("union", true);
-		final JRadioButton selectFirst = new JRadioButton("first");
-		final JRadioButton selectAverage = new JRadioButton("average");
-		final JRadioButton selectIntersection = new JRadioButton("intersection");
-		selectPanel.add(new JLabel("word selection type"));
-		selectPanel.add(selectUnion);
-		selectPanel.add(selectFirst);
-		selectPanel.add(selectAverage);
-		selectPanel.add(selectIntersection);		
+		final JPanel wordSelectPanel = new JPanel(new GridLayout(0,1));
+		final JRadioButton[] selectButtons = new JRadioButton[SELECT_NAMES.length];
 		ButtonGroup selectGroup = new ButtonGroup();
-		selectGroup.add(selectUnion);
-		selectGroup.add(selectFirst);
-		selectGroup.add(selectAverage);
-		selectGroup.add(selectIntersection);
+		for(int i=0;i<selectButtons.length;i++) {
+			JRadioButton selectButton = new JRadioButton(SELECT_NAMES[i]);
+			selectGroup.add(selectButton);
+			wordSelectPanel.add(selectButton);
+			if(i == 0) {
+				selectButton.setSelected(true);
+			}
+			selectButtons[i] = selectButton;
+		}
+		wordSelectPanel.setBorder(BorderFactory.createTitledBorder("Word Selection"));
+		
+		final JPanel similaritySelectPanel = new JPanel(new GridLayout(0,1));
+		final JRadioButton[] similarityButtons = new JRadioButton[Correlation.DISTANCE_NAMES.length];	
+		ButtonGroup similarityGroup = new ButtonGroup();
+		for(int i=0;i<similarityButtons.length;i++) {
+			JRadioButton similarityButton = new JRadioButton(Correlation.DISTANCE_NAMES[i]);
+			similarityGroup.add(similarityButton);
+			similaritySelectPanel.add(similarityButton);
+			if(i == 0) {
+				similarityButton.setSelected(true);
+			}
+			similarityButtons[i] = similarityButton;
+		}
+		similaritySelectPanel.setBorder(BorderFactory.createTitledBorder("Similarity Measure"));
 		
 		ret.add(PanelTools.addLabel("target word", word, BorderLayout.WEST));
 		ret.add(relator1);
 		ret.add(relator2);
 		ret.add(log);
-		ret.add(selectPanel);		
+		ret.add(wordSelectPanel);		
+		ret.add(similaritySelectPanel);		
 		
 		run.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -278,21 +323,24 @@ public class NetworkTools extends JTabbedPane {
 				int max = maxSlider.getValue();
 				
 				int selectType = -1;
-				if(selectUnion.isSelected()) {
-					selectType = SELECT_UNION;
-				} else if(selectFirst.isSelected()) {
-					selectType = SELECT_FIRST;
-				} else if(selectAverage.isSelected()) {
-					selectType = SELECT_AVERAGE;
-				} else if(selectIntersection.isSelected()) {
-					selectType = SELECT_INTERSECTION;
+				for(int i=0;i<selectButtons.length;i++) {
+					if(selectButtons[i].isSelected()) {
+						selectType = i;
+					}
+				}
+				
+				int similarityType = -1;
+				for(int i=0;i<similarityButtons.length;i++) {
+					if(similarityButtons[i].isSelected()) {
+						similarityType = i;
+					}
 				}
 				
 				if(max > min) {
-					double[] results = customUpdate(text, min, max, 
+					double[] results = wordSimilarityOverSetSize(text, min, max, 
 							(WordRelator)relator1.getSelectedItem(), 
 							(WordRelator)relator2.getSelectedItem(), 
-							word.getText(), selectType);
+							word.getText(), selectType, similarityType);
 					
 					
 					double[] xs = new double[max-min+1];
