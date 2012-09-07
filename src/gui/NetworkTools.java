@@ -166,8 +166,8 @@ public class NetworkTools extends JTabbedPane {
 			
 			int count = topWords.length;
 			
-			if(count > 0) {
-								
+			if(count > 0) {								
+				
 				// Get new ranks for list 1.
 				WeightedObject<String>[] rank1 = new WeightedObject[count];
 				for(int j=0;j<topWords.length;j++) {
@@ -188,53 +188,39 @@ public class NetworkTools extends JTabbedPane {
 					rank2_a.put(rank2[j].object, j + 1);
 				}
 				
-				int[] p1 = new int[rank1.length];
-				for(int i=0;i<p1.length;i++) {
-					p1[i] = i;
+				double val = 0;
+				
+				if(similarityMeasure >= Correlation.DISTANCE_SPEARMAN && similarityMeasure <= Correlation.DISTANCE_CONTENTIOUS) {
+					
+					int[] p1 = new int[rank1.length];
+					for(int i=0;i<p1.length;i++) {
+						p1[i] = i;
+					}
+					
+					int[] p2 = new int[rank1.length];
+					for(int i=0;i<p1.length;i++) {
+						p2[i] = rank2_a.get(rank1[i].object) - 1;
+					}
+					
+					val = Correlation.distance(p1, p2, similarityMeasure);
+					
+				} else if(similarityMeasure == Correlation.CORRELATION_PEARSON) {
+					double[] x = new double[rank1.length];
+					for(int i=0;i<x.length;i++) {
+						x[i] = rank1[i].weight;
+					}
+					
+					double[] y = new double[rank1.length];
+					for(int i=0;i<y.length;i++) {
+						y[i] = rank2[rank2_a.get(rank1[i].object) - 1].weight;
+					}
+					
+					val = Correlation.correlationPearson(x, y);
 				}
 				
-				int[] p2 = new int[rank1.length];
-				for(int i=0;i<p1.length;i++) {
-					p2[i] = rank2_a.get(rank1[i].object) - 1;
-				}
 				
-				double val = Correlation.distance(p1, p2, similarityMeasure);
 				
-				/*
-				switch(similarityMeasure) {
-					case SIMILARITY_SPEARMAN:
-						
-						// Get spearman.
-						double sumSqr = 0;
-						for(int j=0;j<count;j++) {
-							Integer rank1value = rank1_a.get(topWords[j]);
-							Integer rank2value = rank2_a.get(topWords[j]);
-							if(rank1value != null && rank2value != null) {
-								int diff = rank1value - rank2value;
-								sumSqr += diff * diff;
-							}
-						}
-						double countD = (double)count;
-						val = 1 - 6.0 * sumSqr / (countD * (countD * countD - 1.0));
-					break;
-					case SIMILARITY_KENDALL_TAU:
-						
-						// Get Kendall tau.
-						int concordant = 0;
-						for(int j=0;j<count;j++) {
-							int rank1value = rank1_a.get(topWords[j]);
-							int rank2value = rank2_a.get(topWords[j]);
-							if(rank1value == rank2value) {
-								concordant ++;
-							}
-						}
-						countD = (double)count;
-						val = (2 * concordant - countD)/(.5 * countD * (countD - 1));
-						
-					break;
-					case SIMILARITY_GOODMAN_KRUSKAL:
-					break;
-				}*/
+				
 				
 				// Save results.
 				text.append(val + ",");
@@ -295,25 +281,34 @@ public class NetworkTools extends JTabbedPane {
 		}
 		wordSelectPanel.setBorder(BorderFactory.createTitledBorder("Word Selection"));
 		
-		final JPanel similaritySelectPanel = new JPanel(new GridLayout(0,1));
+		
+		
+		final JPanel similaritySelectPanelRanked = new JPanel(new GridLayout(0,1));
 		final JRadioButton[] similarityButtons = new JRadioButton[Correlation.DISTANCE_NAMES.length];	
 		ButtonGroup similarityGroup = new ButtonGroup();
 		for(int i=0;i<similarityButtons.length;i++) {
 			JRadioButton similarityButton = new JRadioButton(Correlation.DISTANCE_NAMES[i]);
 			similarityGroup.add(similarityButton);
-			similaritySelectPanel.add(similarityButton);
+			similaritySelectPanelRanked.add(similarityButton);
 			if(i == 0) {
 				similarityButton.setSelected(true);
 			}
 			similarityButtons[i] = similarityButton;
 		}
-		similaritySelectPanel.setBorder(BorderFactory.createTitledBorder("Similarity Measure"));
+		similaritySelectPanelRanked.setBorder(BorderFactory.createTitledBorder("Similarity Measure Ranked"));
+		
+		final JPanel similaritySelectPanel = new JPanel(new GridLayout(0,1));
+		final JRadioButton similarityPearson = new JRadioButton("pearson");
+		similarityGroup.add(similarityPearson);
+		similaritySelectPanel.add(similarityPearson);
+		similaritySelectPanel.setBorder(BorderFactory.createTitledBorder("Similarity Measure Correlation"));
 		
 		ret.add(PanelTools.addLabel("target word", word, BorderLayout.WEST));
 		ret.add(relator1);
 		ret.add(relator2);
 		ret.add(log);
 		ret.add(wordSelectPanel);		
+		ret.add(similaritySelectPanelRanked);	
 		ret.add(similaritySelectPanel);		
 		
 		run.addActionListener(new ActionListener() {
@@ -334,6 +329,9 @@ public class NetworkTools extends JTabbedPane {
 					if(similarityButtons[i].isSelected()) {
 						similarityType = i;
 					}
+				}
+				if(similarityPearson.isSelected()) {
+					similarityType = Correlation.CORRELATION_PEARSON;
 				}
 				
 				if(max > min) {
