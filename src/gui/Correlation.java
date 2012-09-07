@@ -12,6 +12,8 @@ public class Correlation {
 	public static final int DISTANCE_DISTANCES = 2;
 	public static final int DISTANCE_DISTANCES2 = 3;
 	public static final int DISTANCE_CONTENTIOUS = 4;
+	
+	public static final int CORRELATION_PEARSON = 5;
 		
 	public static final String[] DISTANCE_NAMES = {
 		"spearman",
@@ -22,36 +24,46 @@ public class Correlation {
 	
 	public static void main(String[] args) {
 		/*
-		int[] p1 = {1,2,3,4,5,6,7,8,9,10};
-		int[] p2 = {6,3,2,4,5,10,8,7,1,9};
+		double[] x = {10+1,10+.5,10+0};
+		double[] y = {10+1,10+.4,10+.1};
+		System.out.println(correlationPearson(x,y));
 		
-		int[] p1a = {1,2,4,3,5,6,7,8,10,9};
-		int[] p2a = {6,3,4,2,5,10,8,7,9,1};
-
-		for(int i=0;i<=4;i++) {
-			System.out.println(distance(p1,p2,i) + " " + distance(p1a,p2a,i));
-		}
-		*/
-		
+		// Get new ranks for list 1.
 		WeightedObject[] rank1 = {
-				new WeightedObject<String>("a",2),
-				new WeightedObject<String>("b",1),
-				new WeightedObject<String>("c",4),
-				new WeightedObject<String>("d",3),
+				new WeightedObject("a",2.1),
+				new WeightedObject("b",1.1),
+				new WeightedObject("c",4.1),
+				new WeightedObject("d",3.1),
 				};
-		Arrays.sort(rank1);	
+		//Arrays.sort(rank1);		
 		
+		// Get new ranks for list 2.
 		WeightedObject[] rank2 = {
-				new WeightedObject<String>("a",3),
-				new WeightedObject<String>("b",4),
-				new WeightedObject<String>("c",2),
-				new WeightedObject<String>("d",1),
-				};
-		Arrays.sort(rank2);	
+				new WeightedObject("a",3.1),
+				new WeightedObject("b",4.1),
+				new WeightedObject("c",1.1),
+				new WeightedObject("d",2.1),
+				};			
+		//Arrays.sort(rank2);	
+		
 		
 		Hashtable<Object,Integer> rank2_a = new Hashtable<Object,Integer>();
 		for(int j=0;j<rank2.length;j++) {
 			rank2_a.put(rank2[j].object, j + 1);
+		}
+		
+		double[] x = new double[rank1.length];
+		for(int i=0;i<x.length;i++) {
+			x[i] = rank1[i].weight;
+		}
+		
+		double[] y = new double[rank1.length];
+		for(int i=0;i<y.length;i++) {
+			y[i] = rank2[rank2_a.get(rank1[i].object) - 1].weight;
+		}
+		
+		for(int i=0;i<x.length;i++) {
+			System.out.println(x[i] + " " + y[i]);
 		}
 		
 		int[] p1 = new int[rank1.length];
@@ -63,11 +75,35 @@ public class Correlation {
 		for(int i=0;i<p1.length;i++) {
 			p2[i] = rank2_a.get(rank1[i].object) - 1;
 		}
-		
-		for(int i=0;i<p1.length;i++) {
+
+		for(int i=0;i<x.length;i++) {
 			System.out.println(p1[i] + " " + p2[i]);
 		}
+		*/
+		double[] x = {0.625,0.64,0.68,0.733,0.741,0.749,0.752,0.756,0.798,0.835,1.0};
+		double[] y = {0.79,0.799,0.803,0.802,0.776,0.76,0.741,0.784,0.833,0.854,1.0};
+		System.out.println(correlationPearson(x,y));
 		
+	}
+
+	public static double correlationPearson(double[] x, double[] y) {
+		
+		long n = x.length;		
+		double xSum = 0;
+		double ySum = 0;
+		double xySum = 0;
+		double xxSum = 0;
+		double yySum = 0;
+		
+		for(int i=0;i<x.length;i++) {
+			xSum += x[i];
+			ySum += y[i];
+			xySum += x[i] * y[i];
+			xxSum += x[i] * x[i];
+			yySum += y[i] * y[i];
+		}
+		
+		return (n * xySum - xSum * ySum) / (Math.sqrt(n * xxSum - xSum * xSum) * Math.sqrt(n * yySum - ySum * ySum));
 	}
 	
 	public static double distance(int[] p1, int[] p2, int type) {
