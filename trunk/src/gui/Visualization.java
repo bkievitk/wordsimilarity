@@ -20,7 +20,8 @@ public class Visualization extends JPanel implements MouseListener, MouseMotionL
 	public Options options;
 	public WordNode selected = null;
 	public WordNode hoverNode = null;
-	
+
+	public BufferedImage background = null;
 	private BufferedImage rendered = null;
 	public JProgressBar progress;
 	
@@ -114,10 +115,14 @@ public class Visualization extends JPanel implements MouseListener, MouseMotionL
 					if(getWidth() > 0 && getHeight() > 0) {
 						BufferedImage image = new BufferedImage(getWidth(),getHeight(),BufferedImage.TYPE_INT_RGB);												
 						Graphics2D g2 = (Graphics2D)image.getGraphics();
-												
-						g2.setColor(options.getBackgroundColor());
-						g2.fillRect(0, 0, getWidth(), getHeight());
-	
+									
+						if(background != null) {
+							g2.drawImage(background, 0, 0, null);
+						} else {
+							g2.setColor(options.getBackgroundColor());
+							g2.fillRect(0, 0, getWidth(), getHeight());
+						}
+						
 						if(renderState == STATE_RENDER_ONCE || renderState == STATE_RENDER_ALWAYS) {
 							if(renderState == STATE_RENDER_ONCE) {
 								renderState = STATE_RENDER_SMART;
@@ -166,8 +171,13 @@ public class Visualization extends JPanel implements MouseListener, MouseMotionL
 			rendered = new BufferedImage(getWidth(),getHeight(),BufferedImage.TYPE_INT_RGB);
 		}
 		Graphics g = rendered.getGraphics();
-		g.setColor(options.getBackgroundColor());
-		g.fillRect(0, 0, getWidth(), getHeight());
+		
+		if(background != null) {
+			g.drawImage(background, 0, 0, null);
+		} else {
+			g.setColor(options.getBackgroundColor());
+			g.fillRect(0, 0, getWidth(), getHeight());
+		}
 	}		
 	
 	public void mouseClicked(MouseEvent e) {

@@ -92,7 +92,7 @@ public class MainGUIInternal extends MainGUI {
 		// Network tools.
 		networkTools.setSize(300,500);
 		networkTools.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-		networkTools.add(new NetworkTools(wordMap));
+		networkTools.add(new NetworkTools(wordMap, visualizationPanel));
 		networkTools.setVisible(false);
 
 		// General options.

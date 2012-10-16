@@ -74,6 +74,12 @@ public class BEAGLE implements Serializable {
 		sentenceTerminate = new Thought("sentenceterminate",options.dimensions);
 		thoughts.put(sentenceTerminate.representation, sentenceTerminate);
 	}
+
+	public void clearStopListFromThoughts() {
+		for(String word : stopList) {
+			thoughts.remove(word);
+		}
+	}
 	
 	/**
 	 * Load the vector data from a file.

@@ -17,6 +17,11 @@ public class WordRelatorBEAGLE extends WordRelator {
 	public final static String description = "This will compute either context free word relations or order relative word relations as computed by the BEAGLE holographic language model.";
 	public final static String typeName = "BEAGLE";
 	
+	public WordRelatorBEAGLE(Color color, String name, BEAGLE beagle, WordMap wordMap) {
+		super(color, name, wordMap);
+		this.beagle = beagle;
+	}
+	
 	public WordRelatorBEAGLE(Color color, String name, int dimensions, WordMap wordMap) {
 		super(color, name, wordMap);
 		

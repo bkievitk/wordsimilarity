@@ -1,8 +1,17 @@
 package gui;
 
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
 import java.util.Arrays;
 import java.util.Hashtable;
 
+import mdsj.MDSJ;
+import Jama.Matrix;
+import Jama.SingularValueDecomposition;
+
+import relations.beagle.VectorTools;
 import tools.WeightedObject;
 
 public class Correlation {
@@ -12,14 +21,20 @@ public class Correlation {
 	public static final int DISTANCE_DISTANCES = 2;
 	public static final int DISTANCE_DISTANCES2 = 3;
 	public static final int DISTANCE_CONTENTIOUS = 4;
-	
+
 	public static final int CORRELATION_PEARSON = 5;
+	public static final int CORRELATION_PROCRUSTES = 6;
 		
-	public static final String[] DISTANCE_NAMES = {
+	public static final String[] RANK_NAMES = {
 		"spearman",
 		"kendall",
 		"distances",
 		"distances2",
+	};
+	
+	public static final String[] CORRELATION_NAMES = {
+		"pearson",
+		"procrustes",
 	};
 	
 	public static void main(String[] args) {
@@ -86,6 +101,139 @@ public class Correlation {
 		
 	}
 
+	public static double distance(double[][] p1, double[][] p2, int type) {
+		switch(type) {
+			case CORRELATION_PROCRUSTES: return correlationProcrustes(p1,p2);
+		}
+		return -1;
+	}
+	
+	public static double distance(double[] p1, double[] p2, int type) {
+		switch(type) {
+			case CORRELATION_PEARSON: return correlationPearson(p1,p2);
+		}
+		return -1;
+	}
+	
+	public static double correlationProcrustes(double[][] a, double[][] b) {
+					
+		double[][] mdsA = VectorTools.transpose(MDSJ.classicalScaling(a, 2));
+		double[][] mdsB = VectorTools.transpose(MDSJ.classicalScaling(b, 2));
+		
+		normalizeTranslation(mdsA);
+		normalizeTranslation(mdsB);
+				
+		normalizeScaling(mdsA);
+		normalizeScaling(mdsB);
+				
+		double num = 0;
+		double denom = 0;
+		
+		for(int i=0;i<mdsA.length;i++) {
+			num   += mdsA[i][0] * mdsB[i][1] - mdsA[i][1] * mdsB[i][0];
+			denom += mdsA[i][0] * mdsB[i][0] + mdsA[i][1] * mdsB[i][1];
+		}
+		double angle = -Math.atan2(num, denom);
+		double cosAngle = Math.cos(angle);
+		double sinAngle = Math.sin(angle);
+				
+		for(int i=0;i<mdsA.length;i++) {			
+			double newX = cosAngle * mdsB[i][0] - sinAngle * mdsB[i][1];
+			double newY = sinAngle * mdsB[i][0] + cosAngle * mdsB[i][1];
+			mdsB[i][0] = newX;
+			mdsB[i][1] = newY;			
+		}
+			
+		/*
+		
+		BufferedImage image = new BufferedImage(800,600,BufferedImage.TYPE_INT_RGB);
+		Graphics g = image.getGraphics();
+		g.setColor(Color.WHITE);
+		g.fillRect(0, 0, image.getWidth(), image.getHeight());
+		
+		double[] ranges = {-3,3,-3,3};
+				
+		g.setColor(Color.RED);
+		double[][] mdsAT = VectorTools.transpose(mdsA);
+		Stats.showGraph(g, new Rectangle(0,0,image.getWidth(),image.getHeight()), mdsAT[0], mdsAT[1], ranges, philosophers, false);
+		
+		g.setColor(Color.GREEN);
+		double[][] mdsBT = VectorTools.transpose(mdsB);
+		Stats.showGraph(g, new Rectangle(0,0,image.getWidth(),image.getHeight()), mdsBT[0], mdsBT[1], ranges, philosophers, false);
+				
+		PictureFrame.makeFrame(image);
+		*/
+		
+		double sumDiff = 0;
+		for(int i=0;i<mdsA.length;i++) {
+			sumDiff += VectorTools.dist(mdsA[i], mdsB[i]);
+		}
+		
+		return sumDiff / mdsA.length;
+	}
+	
+	public static double procrustes2(double[][] a, double[][] b) {
+
+		normalizeTranslation(a);
+		normalizeTranslation(b);
+
+		normalizeScaling(a);
+		normalizeScaling(b);
+		
+		Matrix aM = new Matrix(a); 
+		Matrix bM = new Matrix(b); 
+		Matrix aMtbM = aM.transpose().times(bM);
+		
+		SingularValueDecomposition svd = aMtbM.svd();
+
+		Matrix r = svd.getU().times(svd.getV());
+		
+		double sum = 0;
+		for(int x=0;x<r.getRowDimension();x++) {
+			for(int y=0;y<r.getColumnDimension();y++) {
+				sum += r.get(x, y) * r.get(x, y);
+			}	
+		}
+		
+		return sum;
+	}
+	
+	public static void normalizeTranslation(double[][] values) {
+		double[] sum = new double[values[0].length];
+		for(double[] vec : values) {
+			for(int i=0;i<vec.length;i++) {
+				sum[i] += vec[i];
+			}
+		}
+		for(int i=0;i<sum.length;i++) {
+			sum[i] /= values.length;
+		}
+		for(double[] vec : values) {
+			for(int i=0;i<vec.length;i++) {
+				vec[i] -= sum[i];
+			}
+		}
+	}
+
+	public static void normalizeScaling(double[][] values) {
+		
+		double sumOfSums = 0;
+		for(int i=0;i<values.length;i++) {
+			
+			double sum = 0;
+			for(int j=0;j<values[i].length;j++) {
+				sum += values[i][j] * values[i][j];
+			}
+			sumOfSums += Math.sqrt(sum);
+		}
+		double scaller = values.length / sumOfSums;
+		
+
+		for(int i=0;i<values.length;i++) {
+			values[i] = VectorTools.mult(values[i], scaller);
+		}		
+	}
+		
 	public static double correlationPearson(double[] x, double[] y) {
 		
 		long n = x.length;		
