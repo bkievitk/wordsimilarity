@@ -411,6 +411,26 @@ public class AdvancedMenu {
 			});
 			images.add(imagesFlickr);
 			
+			// Seperator.
+			file.addSeparator();
+			
+			JMenu language = new JMenu("Language");
+			
+			int i = 0;
+			for(String languageName : Options.languages) {
+				JMenuItem languageChoise = new JMenuItem(languageName);
+				final int languageID = i;
+				languageChoise.addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent arg0) {
+						Options.language = languageID;
+					}
+				});
+				language.add(languageChoise);
+				i++;
+			}
+			
+			file.add(language);
+			
 		return file;
 	}
 	

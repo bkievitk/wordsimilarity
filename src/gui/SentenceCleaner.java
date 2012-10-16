@@ -9,7 +9,9 @@ import java.util.*;
 
 import javax.swing.*;
 
-import tools.StemmerPorter;
+import org.tartarus.snowball.SnowballProgram;
+import org.tartarus.snowball.ext.*;
+
 
 /**
  * Tools to clean up a line.
@@ -21,8 +23,13 @@ public abstract class SentenceCleaner {
 	public abstract String clean(String sentence);
 	
 	public static final Vector<SentenceCleaner> cleaners = getCleaners();
-	public static final HashSet<String> stopList = loadStopList();
-
+	
+	private static HashSet<String> stopList;
+	private static int stopListLanguage = -1;
+	
+	private static String symbols;
+	private static int symbolsLanguage = -1;
+	
 	public static SentenceCleaner getCleaner(String name) {
 		for(SentenceCleaner c : cleaners) {
 			if(c.toString().equals(name)) {
@@ -47,7 +54,16 @@ public abstract class SentenceCleaner {
 		
 		cleaners.add(new SentenceCleaner() {
 			public String clean(String sentence) {
-				sentence = sentence.replaceAll("[^a-zA-Z.?! ]", "");
+				if(symbolsLanguage != Options.language) {
+					try {
+						BufferedReader r = new BufferedReader(new FileReader(new File(Options.getLanguageDir() + "/symbols.txt")));
+						symbols = r.readLine();
+						r.close();
+					} catch(IOException e) {
+						e.printStackTrace();
+					}
+				}
+				sentence = sentence.replaceAll("[^ " + symbols + "]", "");
 				return sentence;
 			}
 			
@@ -78,6 +94,11 @@ public abstract class SentenceCleaner {
 		
 		cleaners.add(new SentenceCleaner() {
 			public String clean(String sentence) {
+				if(stopListLanguage != Options.language) {
+					stopList = loadStopList();
+					stopListLanguage = Options.language;
+				}
+				
 				String[] words = sentence.split(" +");
 				String newSentence = "";
 				for(String word : words) {
@@ -99,16 +120,44 @@ public abstract class SentenceCleaner {
 		
 		cleaners.add(new SentenceCleaner() {
 			public String clean(String sentence) {
+				
 				String[] words = sentence.split(" +");
 				String newSentence = "";
+				
+				SnowballProgram stemmer = null;
+				
+				switch(Options.language) {
+					case Options.Armenian: stemmer = new ArmenianStemmer(); break;
+					case Options.Basque: stemmer = new BasqueStemmer(); break;
+					case Options.Catalan: stemmer = new CatalanStemmer(); break;
+					case Options.Danish: stemmer = new DanishStemmer(); break;
+					case Options.Dutch: stemmer = new DutchStemmer(); break;
+					case Options.English: stemmer = new EnglishStemmer(); break;
+					case Options.Finnish: stemmer = new FinnishStemmer(); break;
+					case Options.French: stemmer = new FrenchStemmer(); break;
+					case Options.German: stemmer = new GermanStemmer(); break;
+					case Options.Hungarian: stemmer = new HungarianStemmer(); break;
+					case Options.Irish: stemmer = new IrishStemmer(); break;
+					case Options.Italian: stemmer = new ItalianStemmer(); break;
+					case Options.Norwegian: stemmer = new NorwegianStemmer(); break;
+					case Options.Portuguese: stemmer = new PortugueseStemmer(); break;
+					case Options.Romanian: stemmer = new RomanianStemmer(); break;
+					case Options.Spanish: stemmer = new SpanishStemmer(); break;
+					case Options.Swedish: stemmer = new SwedishStemmer(); break;
+					case Options.Turkish: stemmer = new TurkishStemmer(); break;		
+				}
+				
 				for(String word : words) {
-					newSentence += StemmerPorter.stem(word) + " ";
+					stemmer.setCurrent(word);
+					stemmer.stem();
+					word = stemmer.getCurrent();
+					newSentence += word + " ";
 				}
 				return newSentence;
 			}
 			
 			public String toString() {
-				return "Apply Porter Stemmer";
+				return "Apply Stemmer";
 			}
 		});
 		
@@ -119,34 +168,17 @@ public abstract class SentenceCleaner {
 	public static HashSet<String> loadStopList() {
 		HashSet<String> stopList = new HashSet<String>();
 		
-		InputStream input = null;
-
-		// Deal with load from multiple sources later.
 		try {
-			URL url = GUISimple.class.getResource("/stop.stp");
-			if(url != null) {
-				try {
-					input = url.openStream();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			} else {			
-				input = new FileInputStream(new File("resources/stop.stp"));
-			}
-		} catch (FileNotFoundException e) {
-			//e.printStackTrace();
-		}
-		
-		try {
-			BufferedReader r = new BufferedReader(new InputStreamReader(input));
+			
+			BufferedReader r = new BufferedReader(new InputStreamReader(new FileInputStream(new File(Options.getLanguageDir() + "/stoplist.stp"))));
 			String line;
 			while((line = r.readLine()) != null) {
 				stopList.add(line.trim());
 			}
+			r.close();
 		} catch (IOException e) {
-			//e.printStackTrace();
-		}
-		
+			e.printStackTrace();
+		}		
 		
 		return stopList;
 	}

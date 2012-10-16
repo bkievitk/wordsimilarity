@@ -4,26 +4,26 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.GridLayout;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
-import java.io.File;
+import java.io.*;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Hashtable;
-import java.util.Set;
 import java.util.Vector;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 
 import relations.WordRelator;
 import tools.KBox;
 import tools.PanelTools;
+import tools.PictureFrame;
 import tools.Stats;
 import tools.VerticalLayout;
 import tools.WeightedObject;
@@ -33,23 +33,65 @@ public class NetworkTools extends JTabbedPane {
 	private static final long serialVersionUID = 4773645627647897222L;
 
 	private WordMap wordMap;
+	private Visualization v;
 	
-	public NetworkTools(WordMap wordMap) {
+	public NetworkTools(WordMap wordMap, Visualization v) {
 		this.wordMap = wordMap;
+		this.v = v;
 		addTab("Distance",distancePanel());
 		addTab("Discrepency",discrepencyPanel());
 		addTab("Statistics",statisticsPanel());
 		addTab("Word",wordPanel());
 		addTab("Scatter Plot",scatterPanel());
 		addTab("Size vs Word Similarity",wordSimilarityOverSetSizeContainer());
+		addTab("Heatmap",heatMapContainer());
 	}
 	
 	public static void main(String[] args) {
+		
 		MainGUIExternal gui = new MainGUIExternal(false);	
+		
+		try {
+			IO.loadWorkSpace(gui.wordMap, new BufferedInputStream(new FileInputStream(new File("heatTest.w2w"))));
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
+		
+		/*
+		BufferedImage image = new BufferedImage(800,100,BufferedImage.TYPE_INT_RGB);
+		Graphics g = image.getGraphics();
+		
+		for(int i=0;i<image.getWidth();i++) {
+			double p = i / (double)image.getWidth();
+			g.setColor(heatMapColor(p));
+			g.drawLine(i, 0, i, image.getHeight());
+		}
+		
+		PictureFrame.makeFrame(image);
+		*/
+		
+		/*
 		IO.loadWordSimilarity(gui.wordMap, new File("C:/Users/bkiev_000/Desktop/Brent/metaphysicsIEP.csv"));
 		IO.loadWordSimilarity(gui.wordMap, new File("C:/Users/bkiev_000/Desktop/Brent/metaphysicsSEP.csv"));
 		IO.loadWordSimilarity(gui.wordMap, new File("C:/Users/bkiev_000/Desktop/Brent/kantIEP.csv"));
-		IO.loadWordSimilarity(gui.wordMap, new File("C:/Users/bkiev_000/Desktop/Brent/kantSEP.csv"));		
+		IO.loadWordSimilarity(gui.wordMap, new File("C:/Users/bkiev_000/Desktop/Brent/kantSEP.csv"));	
+		*/	
+	}
+	
+	private static Color heatMapColor(double p) {
+		int r = (int)(255 - p * 255 * 3 / 2);
+		int gr = (int)((1 - Math.abs(.5 - p)) * 255 * 2 / 3);
+		int b = (int)(p * 255 * 3 / 2 - 255 / 3);
+
+		r = Math.max(0, Math.min(255, r));
+		gr = Math.max(0, Math.min(255, gr));
+		b = Math.max(0, Math.min(255, b));
+
+		r =  (int)(r  * (1 - p * .7));
+		gr = (int)(gr * (1 - p * .7));
+		b =  (int)(b  * (1 - p * .7));
+		
+		return new Color(r,gr,b);
 	}
 
 	private static final int SELECT_UNION = 0;
@@ -58,6 +100,102 @@ public class NetworkTools extends JTabbedPane {
 	private static final int SELECT_INTERSECTION = 3;
 	private static final String[] SELECT_NAMES = {"Union","First","Average","Intersection"};
 		
+	private Container heatMapContainer() {
+
+		Container ret = Box.createVerticalBox();
+		
+		
+		JPanel intersimilarity = new JPanel(new GridLayout(0,1));
+		intersimilarity.setBorder(BorderFactory.createTitledBorder("Intersimilarity"));
+
+		JButton run = new JButton("run");
+		final JComboBox<?> relator1 = wordMap.getComboComparators();
+		final JComboBox<?> relator2 = wordMap.getComboComparators();
+		
+		intersimilarity.add(run);
+		intersimilarity.add(relator1);
+		intersimilarity.add(relator2);
+		
+		run.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				
+				JTextArea text = new JTextArea();
+				
+				Vector<WeightedObject<WordNode>> weights = new Vector<WeightedObject<WordNode>>();
+				for(WordNode word : wordMap.activeWords.values()) {
+					double sim = wordSimilarityOverSetSize(text, 400, 401, (WordRelator)relator1.getSelectedItem(), (WordRelator)relator2.getSelectedItem(), word.word, SELECT_AVERAGE, Correlation.DISTANCE_SPEARMAN)[0];					
+					weights.add(new WeightedObject<WordNode>(word, sim));
+				}
+				setHeatMap(weights);
+				
+			}			
+		});
+		
+		JPanel count = new JPanel(new GridLayout(0,1));
+		count.setBorder(BorderFactory.createTitledBorder("Word Count"));
+		run = new JButton("run");
+		run.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				
+				Vector<WeightedObject<WordNode>> weights = new Vector<WeightedObject<WordNode>>();
+				for(WordNode word : wordMap.activeWords.values()) {
+					double val = word.getCount();
+					weights.add(new WeightedObject<WordNode>(word, val));
+				}
+				setHeatMap(weights);
+			}			
+		});
+		
+		count.add(run);
+
+		ret.add(intersimilarity);
+		ret.add(count);
+		
+		return ret;
+	}
+
+	private BufferedImage createHeatMap(Vector<WeightedObject<WordNode>> weights) {
+		double min = weights.get(0).weight;
+		double max = weights.get(0).weight;
+		for(WeightedObject<WordNode> word : weights) {
+			min = Math.min(min, word.weight);
+			max = Math.max(max, word.weight);
+		}
+		
+		for(WeightedObject<WordNode> word : weights) {
+			word.weight = (word.weight - min) / (max - min);
+		}
+		
+		BufferedImage image = new BufferedImage(v.getWidth(),v.getHeight(),BufferedImage.TYPE_INT_RGB);
+		for(int x=0;x<image.getWidth();x++) {
+			for(int y=0;y<image.getHeight();y++) {
+				double sum = 0;
+				double count = 0;
+				for(int i=0;i<weights.size();i++) {
+					double dx = (x - weights.get(i).object.getX());
+					double dy = (y - weights.get(i).object.getY());
+					double d = Math.sqrt(dx * dx + dy * dy);
+					d = 1/d;
+					d = Math.pow(d, 5);
+					count += d;
+					sum += d * weights.get(i).weight;
+				}
+				double avg = sum / count;
+				
+				Color c = heatMapColor(avg);
+				image.setRGB(x, y, c.getRGB());
+			}	
+		}
+		
+		return image;
+	}
+	
+	private void setHeatMap(Vector<WeightedObject<WordNode>> weights) {
+		v.background = createHeatMap(weights);
+		v.imageChanged = true;
+		v.repaint();
+	}
+	
 	private double[] wordSimilarityOverSetSize(JTextArea text, int min, int max, WordRelator wr1, WordRelator wr2, String targetWord, int wordSelect, int similarityMeasure) {
 		
 		// Get the top n results for both comparators.		
@@ -215,12 +353,25 @@ public class NetworkTools extends JTabbedPane {
 						y[i] = rank2[rank2_a.get(rank1[i].object) - 1].weight;
 					}
 					
-					val = Correlation.correlationPearson(x, y);
+					val = Correlation.distance(x, y, similarityMeasure);
+				} else if(similarityMeasure == Correlation.CORRELATION_PROCRUSTES) {
+					
+					double[][] x = new double[topWords.length][topWords.length];
+					double[][] y = new double[topWords.length][topWords.length];
+					for(int i=0;i<topWords.length;i++) {
+						for(int j=0;j<topWords.length;j++) {
+							if(i == j) {
+								x[i][j] = 0;
+								y[i][j] = 0;
+							} else {
+								x[i][j] = 1 - wr1.getDistance(topWords[i], topWords[j]);
+								y[i][j] = 1 - wr2.getDistance(topWords[i], topWords[j]);
+							}
+						}
+					}
+										
+					val = Correlation.distance(x, y, similarityMeasure);
 				}
-				
-				
-				
-				
 				
 				// Save results.
 				text.append(val + ",");
@@ -237,8 +388,14 @@ public class NetworkTools extends JTabbedPane {
 		//JPanel ret = new JPanel(new GridLayout(0,1));
 		Container ret = Box.createVerticalBox();
 		
+		JPanel runs = new JPanel(new GridLayout(1,0));		
 		JButton run = new JButton("run");
-		ret.add(run);
+		JButton heatmap = new JButton("set heatmap");
+		JButton heatmapMovie = new JButton("heatmap movie");
+		runs.add(run);
+		runs.add(heatmap);
+		runs.add(heatmapMovie);
+		ret.add(runs);
 		
 		final JTextArea text = new JTextArea();
 		text.setPreferredSize(new Dimension(0,20));
@@ -284,32 +441,142 @@ public class NetworkTools extends JTabbedPane {
 		
 		
 		final JPanel similaritySelectPanelRanked = new JPanel(new GridLayout(0,1));
-		final JRadioButton[] similarityButtons = new JRadioButton[Correlation.DISTANCE_NAMES.length];	
+		final JRadioButton[] similarityButtonsRanked = new JRadioButton[Correlation.RANK_NAMES.length];	
 		ButtonGroup similarityGroup = new ButtonGroup();
-		for(int i=0;i<similarityButtons.length;i++) {
-			JRadioButton similarityButton = new JRadioButton(Correlation.DISTANCE_NAMES[i]);
+		for(int i=0;i<similarityButtonsRanked.length;i++) {
+			JRadioButton similarityButton = new JRadioButton(Correlation.RANK_NAMES[i]);
 			similarityGroup.add(similarityButton);
 			similaritySelectPanelRanked.add(similarityButton);
 			if(i == 0) {
 				similarityButton.setSelected(true);
 			}
-			similarityButtons[i] = similarityButton;
+			similarityButtonsRanked[i] = similarityButton;
 		}
 		similaritySelectPanelRanked.setBorder(BorderFactory.createTitledBorder("Similarity Measure Ranked"));
 		
-		final JPanel similaritySelectPanel = new JPanel(new GridLayout(0,1));
-		final JRadioButton similarityPearson = new JRadioButton("pearson");
-		similarityGroup.add(similarityPearson);
-		similaritySelectPanel.add(similarityPearson);
-		similaritySelectPanel.setBorder(BorderFactory.createTitledBorder("Similarity Measure Correlation"));
-		
+		final JPanel similaritySelectPanelCorrelation = new JPanel(new GridLayout(0,1));
+		final JRadioButton[] similarityButtonsCorrelation = new JRadioButton[Correlation.CORRELATION_NAMES.length];	
+		for(int i=0;i<similarityButtonsCorrelation.length;i++) {
+			JRadioButton similarityButton = new JRadioButton(Correlation.CORRELATION_NAMES[i]);
+			similarityGroup.add(similarityButton);
+			similaritySelectPanelCorrelation.add(similarityButton);			
+			similarityButtonsCorrelation[i] = similarityButton;
+		}
+		similaritySelectPanelCorrelation.setBorder(BorderFactory.createTitledBorder("Similarity Measure Correlation"));
+				
 		ret.add(PanelTools.addLabel("target word", word, BorderLayout.WEST));
 		ret.add(relator1);
 		ret.add(relator2);
 		ret.add(log);
 		ret.add(wordSelectPanel);		
 		ret.add(similaritySelectPanelRanked);	
-		ret.add(similaritySelectPanel);		
+		ret.add(similaritySelectPanelCorrelation);		
+		
+		heatmap.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				JTextArea text = new JTextArea();
+				
+				Vector<WeightedObject<WordNode>> weights = new Vector<WeightedObject<WordNode>>();
+				for(WordNode word : wordMap.activeWords.values()) {
+					
+					int selectType = -1;
+					for(int i=0;i<selectButtons.length;i++) {
+						if(selectButtons[i].isSelected()) {
+							selectType = i;
+						}
+					}
+					
+					int similarityType = -1;
+					for(int i=0;i<similarityButtonsRanked.length;i++) {
+						if(similarityButtonsRanked[i].isSelected()) {
+							similarityType = i;
+						}
+					}
+					for(int i=0;i<similarityButtonsCorrelation.length;i++) {
+						if(similarityButtonsCorrelation[i].isSelected()) {
+							similarityType = i + Correlation.CORRELATION_PEARSON;
+						}
+					}
+					
+					double sim = wordSimilarityOverSetSize(text, minSlider.getValue(), minSlider.getValue()+1, (WordRelator)relator1.getSelectedItem(), (WordRelator)relator2.getSelectedItem(), word.word, selectType, similarityType)[0];					
+					weights.add(new WeightedObject<WordNode>(word, sim));
+				}
+				setHeatMap(weights);
+			}
+		});
+		
+		heatmapMovie.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				
+				JFileChooser chooser = new JFileChooser();
+				chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+				chooser.showSaveDialog(null);
+				
+				File dir = chooser.getSelectedFile();
+				
+				JTextArea text = new JTextArea();
+				
+				for(int index=minSlider.getValue();index<maxSlider.getValue();index+= 10) {
+					Vector<WeightedObject<WordNode>> weights = new Vector<WeightedObject<WordNode>>();
+					
+					for(WordNode word : wordMap.activeWords.values()) {
+						
+						int selectType = -1;
+						for(int i=0;i<selectButtons.length;i++) {
+							if(selectButtons[i].isSelected()) {
+								selectType = i;
+							}
+						}
+						
+						int similarityType = -1;
+						for(int i=0;i<similarityButtonsRanked.length;i++) {
+							if(similarityButtonsRanked[i].isSelected()) {
+								similarityType = i;
+							}
+						}
+						for(int i=0;i<similarityButtonsCorrelation.length;i++) {
+							if(similarityButtonsCorrelation[i].isSelected()) {
+								similarityType = i + Correlation.CORRELATION_PEARSON;
+							}
+						}
+						
+						double sim = wordSimilarityOverSetSize(text, index, index+1, (WordRelator)relator1.getSelectedItem(), (WordRelator)relator2.getSelectedItem(), word.word, selectType, similarityType)[0];					
+						weights.add(new WeightedObject<WordNode>(word, sim));
+					}
+					BufferedImage image = createHeatMap(weights);
+					Graphics g = image.getGraphics();
+					FontMetrics fm = g.getFontMetrics();
+					
+					for(WordNode word1 : wordMap.activeWords.values()) {
+						int width = fm.stringWidth(word1.word) + 6;
+						int height = fm.getHeight();
+						
+						int radius = 10;
+						int textX = word1.getX() + radius;
+						int textY = word1.getY() + radius;
+						
+						/*
+							g.setColor(Color.WHITE);
+							g.fillRect(textX, textY, width, height);
+						
+							g.setColor(Color.BLACK);
+							g.drawRect(textX, textY, width, height);
+						*/
+						
+						g.setColor(Color.BLACK);
+						g.drawString(word1.word, textX + 3, textY + fm.getAscent());
+					}
+					
+					
+					try {
+						ImageIO.write(image, "png", new File(dir + "/" + index + ".png"));
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		});
+		
 		
 		run.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -325,13 +592,15 @@ public class NetworkTools extends JTabbedPane {
 				}
 				
 				int similarityType = -1;
-				for(int i=0;i<similarityButtons.length;i++) {
-					if(similarityButtons[i].isSelected()) {
+				for(int i=0;i<similarityButtonsRanked.length;i++) {
+					if(similarityButtonsRanked[i].isSelected()) {
 						similarityType = i;
 					}
 				}
-				if(similarityPearson.isSelected()) {
-					similarityType = Correlation.CORRELATION_PEARSON;
+				for(int i=0;i<similarityButtonsCorrelation.length;i++) {
+					if(similarityButtonsCorrelation[i].isSelected()) {
+						similarityType = i + Correlation.CORRELATION_PEARSON;
+					}
 				}
 				
 				if(max > min) {
