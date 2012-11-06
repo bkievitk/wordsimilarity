@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.io.*;
 import java.util.Arrays;
 import java.util.Hashtable;
 
@@ -12,6 +13,7 @@ import Jama.Matrix;
 import Jama.SingularValueDecomposition;
 
 import relations.beagle.VectorTools;
+import relations.helpers.WordRelationCrystalized;
 import tools.WeightedObject;
 
 public class Correlation {
@@ -38,6 +40,20 @@ public class Correlation {
 	};
 	
 	public static void main(String[] args) {
+		
+		
+		WordMap wordMap = new WordMap();
+		try {
+			WordRelationCrystalized en = new WordRelationCrystalized(Color.BLACK, wordMap, new BufferedReader(new FileReader(new File("results/english.csv"))));
+			WordRelationCrystalized fr = new WordRelationCrystalized(Color.BLACK, wordMap, new BufferedReader(new FileReader(new File("results/french.csv"))));
+			System.out.println(correlationProcrustes(en.weights, fr.weights));
+			
+			
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		
+		
 		/*
 		double[] x = {10+1,10+.5,10+0};
 		double[] y = {10+1,10+.4,10+.1};
@@ -95,9 +111,9 @@ public class Correlation {
 			System.out.println(p1[i] + " " + p2[i]);
 		}
 		*/
-		double[] x = {0.625,0.64,0.68,0.733,0.741,0.749,0.752,0.756,0.798,0.835,1.0};
-		double[] y = {0.79,0.799,0.803,0.802,0.776,0.76,0.741,0.784,0.833,0.854,1.0};
-		System.out.println(correlationPearson(x,y));
+		//double[] x = {0.625,0.64,0.68,0.733,0.741,0.749,0.752,0.756,0.798,0.835,1.0};
+		//double[] y = {0.79,0.799,0.803,0.802,0.776,0.76,0.741,0.784,0.833,0.854,1.0};
+		//System.out.println(correlationPearson(x,y));
 		
 	}
 
@@ -115,10 +131,91 @@ public class Correlation {
 		return -1;
 	}
 	
-	public static double correlationProcrustes(double[][] a, double[][] b) {
-					
+	public static double[][][] transformProcrustes(double[][] a, double[][] b) {
+		
+		for(int x=0;x<a.length;x++) {
+			for(int y=0;y<a[x].length;y++) {
+				a[x][y] = 1 - a[x][y];
+				b[x][y] = 1 - b[x][y];
+			}	
+		}		
+		
 		double[][] mdsA = VectorTools.transpose(MDSJ.classicalScaling(a, 2));
 		double[][] mdsB = VectorTools.transpose(MDSJ.classicalScaling(b, 2));
+
+		VectorTools.show(a);
+		VectorTools.show(b);
+		
+		normalizeTranslation(mdsA);
+		normalizeTranslation(mdsB);
+				
+		normalizeScaling(mdsA);
+		normalizeScaling(mdsB);
+
+		double[][] mdsB1 = normalizeRotation(mdsA, mdsB);
+		
+		for(int i=0;i<mdsB.length;i++) {
+			mdsB[i][0] = -mdsB[i][0];
+		}
+		double[][] mdsB2 = normalizeRotation(mdsA, mdsB);
+
+		double sumDiff1 = 0;
+		for(int i=0;i<mdsA.length;i++) {
+			sumDiff1 += VectorTools.dist(mdsA[i], mdsB1[i]);
+		}
+		
+		double sumDiff2 = 0;
+		for(int i=0;i<mdsA.length;i++) {
+			sumDiff2 += VectorTools.dist(mdsA[i], mdsB2[i]);
+		}
+		
+		if(sumDiff1 > sumDiff2) {
+			double[][][] ret = {mdsA,mdsB2};
+			return ret;
+		} else {
+			double[][][] ret = {mdsA,mdsB1};
+			return ret;
+		}
+	}
+	
+	private static double[][] normalizeRotation(double[][] mdsA, double[][] mdsB) {
+		
+		double num = 0;
+		double denom = 0;
+		
+		for(int i=0;i<mdsA.length;i++) {
+			num   += mdsA[i][0] * mdsB[i][1] - mdsA[i][1] * mdsB[i][0];
+			denom += mdsA[i][0] * mdsB[i][0] + mdsA[i][1] * mdsB[i][1];
+		}
+		double angle = -Math.atan2(num, denom);
+		double cosAngle = Math.cos(angle);
+		double sinAngle = Math.sin(angle);
+				
+		double[][] mdsBNew1 = new double[mdsB.length][mdsB[0].length];
+		for(int i=0;i<mdsA.length;i++) {			
+			double newX = cosAngle * mdsB[i][0] - sinAngle * mdsB[i][1];
+			double newY = sinAngle * mdsB[i][0] + cosAngle * mdsB[i][1];
+			mdsBNew1[i][0] = newX;
+			mdsBNew1[i][1] = newY;			
+		}
+		
+		return mdsBNew1;
+	}
+	
+	public static double correlationProcrustes(double[][] a, double[][] b) {
+					
+		for(int x=0;x<a.length;x++) {
+			for(int y=0;y<a[x].length;y++) {
+				a[x][y] = 1 - a[x][y];
+				b[x][y] = 1 - b[x][y];
+			}	
+		}		
+		
+		double[][] mdsA = VectorTools.transpose(MDSJ.classicalScaling(a, 2));
+		double[][] mdsB = VectorTools.transpose(MDSJ.classicalScaling(b, 2));
+
+		VectorTools.show(a);
+		VectorTools.show(b);
 		
 		normalizeTranslation(mdsA);
 		normalizeTranslation(mdsB);
@@ -126,6 +223,7 @@ public class Correlation {
 		normalizeScaling(mdsA);
 		normalizeScaling(mdsB);
 				
+		
 		double num = 0;
 		double denom = 0;
 		
