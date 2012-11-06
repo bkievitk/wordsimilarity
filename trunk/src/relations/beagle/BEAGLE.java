@@ -486,10 +486,10 @@ public class BEAGLE implements Serializable {
 	private KBox<Thought> topNLexicalMatchesNonStoplisted(double[] representation) {
 		KBox<Thought> kBox = new KBox<Thought>(options.numResults,true);
 		for(Thought comp : thoughts.values()) {
-			if(!stopList.contains(comp.representation)) {
+			//if(!stopList.contains(comp.representation)) {
 				double angle = VectorTools.getCosine(representation, comp.lexical);
 				kBox.add(new WeightedObject<Thought>(comp, angle));
-			}
+			//}
 		}
 		return kBox;
 	}
@@ -532,7 +532,7 @@ public class BEAGLE implements Serializable {
 	public static String cleanLine(String s) {
 		s = s.toLowerCase();
 		s = s.replaceAll("  +", " ");
-		s = s.replaceAll("[^a-z ]", "");
+		s = s.replaceAll("[^a-zÀÂÄÈÉÊËÎÏÔŒÙÛÜŸàâäèéêëîïôœùûüÿ ]", "");
 		s = s.trim();
 		return s;
 	}
@@ -704,6 +704,7 @@ public class BEAGLE implements Serializable {
 		}
 	}
 	
+	
 	public Thought[] addTermination(Thought[] thoughts) {
 		Thought[] thoughtsTerminated = new Thought[thoughts.length+1];
 		for(int i=0;i<thoughts.length;i++) {
@@ -712,6 +713,7 @@ public class BEAGLE implements Serializable {
 		thoughtsTerminated[thoughts.length] = sentenceTerminate;
 		return thoughtsTerminated;
 	}
+	
 
 	/**
 	 * Encode order information using RPM.

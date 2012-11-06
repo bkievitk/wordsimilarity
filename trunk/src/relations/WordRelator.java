@@ -135,6 +135,7 @@ public abstract class WordRelator implements Serializable {
 						learn(lines.get(i));
 					}
 					progress.setValue(progress.getMaximum());
+					label.setText("Done learning.");
 				}
 			}).start();
 			

@@ -78,6 +78,16 @@ public class VectorTools {
 		System.out.println();
 	}
 	
+	public static void show(double[][] a) {
+		for(double d[] : a) {
+			for(double c : d) {
+				System.out.print("[" + c + "]");
+			}
+			System.out.println();
+		}
+		System.out.println();
+	}
+	
 	public static double[] limitSize(double[] v, double len) {
 		double dist = dist(v);
 		if(dist > len) {
