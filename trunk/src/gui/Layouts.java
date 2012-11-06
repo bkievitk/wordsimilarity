@@ -58,7 +58,7 @@ public class Layouts {
 			}
 		}
 	}
-	
+		
 	public static void layoutBinary(WordMap wordMap, WordRelator wordRelator1, WordRelator wordRelator2) {
 		for(WordNode word1 : wordMap.getActiveWordNodeList()) {
 
