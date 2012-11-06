@@ -605,7 +605,93 @@ public class AdvancedMenu {
 			}
 		});
 		layout.add(mds);
+		
+		JMenuItem procrustes = new JMenuItem("Procrustes Layout");
+		procrustes.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				WordRelator wr1 = (WordRelator)JOptionPane.showInputDialog(
+	                    null,
+	                    "Select comparator to use for First Procrustes.",
+	                    "Comparator Selection",
+	                    JOptionPane.PLAIN_MESSAGE,
+	                    null,
+	                    wordMap.activeRelations.toArray(),
+	                    null);
 
+				WordRelator wr2 = (WordRelator)JOptionPane.showInputDialog(
+	                    null,
+	                    "Select comparator to use for Second Procrustes.",
+	                    "Comparator Selection",
+	                    JOptionPane.PLAIN_MESSAGE,
+	                    null,
+	                    wordMap.activeRelations.toArray(),
+	                    null);
+				
+
+				WordRelator trans = (WordRelator)JOptionPane.showInputDialog(
+	                    null,
+	                    "Translation.",
+	                    "Comparator Selection",
+	                    JOptionPane.PLAIN_MESSAGE,
+	                    null,
+	                    wordMap.activeRelations.toArray(),
+	                    null);
+
+
+				Set<String> words1 = wr1.getWords();
+				Set<String> words2 = wr2.getWords();
+
+				Vector<String> words1Order = new Vector<String>();
+				Vector<String> words2Order = new Vector<String>();
+				
+				for(String word1 : words1) {
+					if(wordMap.activeWords.get(word1) != null) {
+						for(String word2 : words2) {
+							if(!word1.equals(word2) && wordMap.activeWords.get(word2) != null && trans.getDistance(word1, word2) > .99) {
+								words1Order.add(word1);
+								words2Order.add(word2);
+								break;
+							}
+						}
+					}
+				}
+
+				double[][] sim1 = new double[words1Order.size()][words1Order.size()];
+				for(int i=0;i<sim1.length;i++) {
+					for(int j=0;j<sim1.length;j++) {
+						sim1[i][j] = wr1.getDistance(words1Order.get(i), words1Order.get(j));
+					}
+				}
+				
+				double[][] sim2 = new double[words2Order.size()][words2Order.size()];
+				for(int i=0;i<sim2.length;i++) {
+					for(int j=0;j<sim2.length;j++) {
+						sim2[i][j] = wr2.getDistance(words2Order.get(i), words2Order.get(j));
+					}
+				}
+				
+				double[][][] ret = Correlation.transformProcrustes(sim1, sim2);
+				double[][] pos1 = ret[0];
+				double[][] pos2 = ret[1];
+				
+				for(int i=0;i<words1Order.size();i++) {
+					WordNode wn = wordMap.words.get(words1Order.get(i));
+					double[] loc = {pos1[i][0], pos1[i][1], 0};
+					wn.location = loc;
+				}
+				
+				for(int i=0;i<words2Order.size();i++) {
+					WordNode wn = wordMap.words.get(words2Order.get(i));
+					double[] loc = {pos2[i][0], pos2[i][1], 0};
+					wn.location = loc;
+				}
+				
+				Layouts.layoutFitScreen(wordMap, main.visualizationPanel.getSize());
+				main.visualizationChanged();
+			}
+		});
+		layout.add(procrustes);
+		
 		JMenuItem tsne = new JMenuItem("tSNE Layout");
 		tsne.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -634,9 +720,6 @@ public class AdvancedMenu {
 		});
 		layout.add(fit);
 		
-		
-		
-
 		JMenuItem binary = new JMenuItem("Sided Layout");
 		binary.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {		
@@ -666,7 +749,50 @@ public class AdvancedMenu {
 		});
 		layout.add(binary);
 		
-		
+		JMenuItem split = new JMenuItem("Split Layout");
+		split.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {		
+				WordRelator wordRelator = (WordRelator)JOptionPane.showInputDialog(
+                    null,
+                    "Select comparator.",
+                    "Comparator Selection",
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    wordMap.activeRelations.toArray(),
+                    null);
+
+				int track = 0;
+				int track2 = 0;
+				for(WordNode word1 : wordMap.getActiveWordNodeList()) {
+					boolean found = false;
+					
+					for(WordNode word2 : wordMap.getActiveWordNodeList()) {
+						
+						double dist = wordRelator.getDistance(word1.word, word2.word);
+						if(dist > .5) {
+							if(word1.word.startsWith("<")) {
+								word1.location[0] = 1;
+								word1.location[1] = track;
+								word2.location[0] = 0;
+								word2.location[1] = track;
+								track++;
+							}
+							found = true;
+						}
+					}	
+					
+					if(!found) {
+						word1.location[0] = 2 + track / 30;
+						word1.location[1] = track2 % 30;
+						track2++;
+					}
+				}
+				
+				Layouts.layoutFitScreen(wordMap, main.visualizationPanel.getSize());
+				main.visualizationChanged();				
+			}
+		});
+		layout.add(split);
 		
 		
 		
