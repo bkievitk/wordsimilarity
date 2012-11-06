@@ -13,7 +13,7 @@ public class OptionsModule implements Serializable {
 	public static final int CONVOLUTION = 0;
 	public static final int RPM = 1;
 		
-	public int combineOperator = CONVOLUTION;
+	public int combineOperator = RPM;
 	public boolean autoAddWords = false;
 	public int windowSize = 7;
 	public int dimensions = 500;
@@ -24,8 +24,8 @@ public class OptionsModule implements Serializable {
 	public boolean negationRepulsion = false;
 	public boolean updateWordCount = true;
 
-	public boolean learnContext;
-	public boolean learnOrder;
+	public boolean learnContext = true;
+	public boolean learnOrder = false;
 
 	public transient File stopListPath;
 	public transient File wordSetPath;
