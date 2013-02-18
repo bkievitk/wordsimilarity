@@ -4,4 +4,4 @@
 
 When you start up word 2 word, you will see the following screen
 
-http://code.google.com/p/wordsimilarity/source/browse/wiki/w2w_home.png
+http://wordsimilarity.googlecode.com/svn/wiki/w2w_home.png
