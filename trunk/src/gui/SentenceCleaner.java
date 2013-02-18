@@ -240,7 +240,8 @@ public abstract class SentenceCleaner {
 				}
 				selectedCleaners.addLast(getCleaner("Remove Web Tags."));
 				selectedCleaners.addLast(getCleaner("To Lower Case."));
-				selectedCleaners.addLast(getCleaner("Alpha Numeric Only."));				
+				selectedCleaners.addLast(getCleaner("Alpha Numeric Only."));
+				selectedCleaners.addLast(getCleaner("Remove stoplisted words."));				
 				
 				cleanerList.setText(getList(selectedCleaners));
 			}

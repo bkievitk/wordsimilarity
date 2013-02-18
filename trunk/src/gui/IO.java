@@ -13,7 +13,7 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 
 import relations.WordRelator;
-import relations.helpers.WordRelaitonSingleWord;
+import relations.helpers.WordRelationSingleWord;
 import relations.helpers.WordRelationCrystalized;
 import tools.PanelTools;
 import tools.VerticalLayout;
@@ -22,6 +22,40 @@ public class IO {
 
 	public static final int CMP_SHORT = 0;
 	public static final int CMP_DOUBLE = 1;
+	
+	public static void loadColorCodes(WordMap wordMap, BufferedReader r, Color[] allColors) throws IOException {
+		String line;
+		Hashtable<String,Color> colors = new Hashtable<String,Color>();
+		while((line = r.readLine()) != null) {
+			String[] parts = line.split(",");
+			String word = parts[0];
+			String type = parts[1];
+			
+			WordNode node = wordMap.words.get(word);
+			if(node != null) {
+				Color color = colors.get(type);
+				if(color == null) {
+					color = allColors[colors.size()];
+					colors.put(type, color);
+				}
+				node.color = color;
+			}
+		}
+	}
+	
+	public static void loadColorCodes(WordMap wordMap, BufferedReader r, Hashtable<String,Color> colors) throws IOException {
+		String line;
+		while((line = r.readLine()) != null) {
+			String[] parts = line.split(",");
+			String word = parts[0];
+			String type = parts[1];
+			
+			WordNode node = wordMap.words.get(word);
+			if(node != null) {
+				node.color = colors.get(type);
+			}
+		}
+	}
 	
 	public static void readAll(InputStream is, byte[] bytes) throws IOException {
 		for(int start = 0; start<bytes.length; start += is.read(bytes,start,bytes.length-start));
@@ -289,53 +323,66 @@ public class IO {
 			e.printStackTrace();
 		}
 	}
+
+	public static WordRelationCrystalized loadCSV(WordMap wordMap, BufferedReader input) throws IOException {
+		return loadCSV(wordMap,input,Color.BLACK);
+	}
 	
-	public static void loadCSV(WordMap wordMap, BufferedReader input) throws IOException {
+	public static WordRelationCrystalized loadCSV(WordMap wordMap, File input, Color c) throws IOException {
+		return loadCSV(wordMap, new BufferedReader(new FileReader(input)), c);
+	}
+	
+	public static WordRelationCrystalized loadCSV(WordMap wordMap, BufferedReader input, Color c) throws IOException {
 		while(true) {
-			WordRelationCrystalized crystalized = new WordRelationCrystalized(Color.BLACK,wordMap,input);
+			WordRelationCrystalized crystalized = new WordRelationCrystalized(c, wordMap,input);
 			if(crystalized.name == WordRelator.ERROR_INITIALIZING) {
 				break;
 			}
 			wordMap.setRelatorStatus(crystalized, true);
-			wordMap.addRelatorWords(crystalized);									
+			wordMap.addRelatorWords(crystalized);
+			return crystalized;
 		}
+		return null;
 	}
 
+	public static WordRelationSingleWord loadWordSimilarity(WordMap wordMap, File file) {
+		return loadWordSimilarity(wordMap, file, null, Color.BLACK);
+	}
 	
-	public static void loadWordSimilarity(WordMap wordMap, File file) {
+	public static WordRelationSingleWord loadWordSimilarity(WordMap wordMap, File file, String cmpWrd, Color color) {
+		return loadWordSimilarity(wordMap, file, cmpWrd, color, file.getName());
+	}
+	
+	public static WordRelationSingleWord loadWordSimilarity(WordMap wordMap, File file, String cmpWrd, Color color, String name) {
 		try {
 			BufferedReader r = new BufferedReader(new FileReader(file));
-			String cmpWrd = r.readLine().split(" +")[0];
-			String line;
-			int i = 0;
 			
-			WordRelaitonSingleWord crystalized = new WordRelaitonSingleWord(Color.BLACK,file.getName(),wordMap,cmpWrd);
-			crystalized.wordToInt = new Hashtable<String,Integer>();
-			crystalized.wordToInt.put(cmpWrd, i);
-			Vector<Double> values = new Vector<Double>();
-			values.add(1.0);
+			if(cmpWrd == null) {
+				cmpWrd = r.readLine().split(",")[0];
+			}
+			
+			String line;
+			
+			WordRelationSingleWord crystalized = new WordRelationSingleWord(color,name,wordMap,cmpWrd);
+			crystalized.values = new Hashtable<String,Double>();
 			
 			while((line = r.readLine()) != null) {
-				i++;
-				String[] strs = line.split(" +");
+				String[] strs = line.split(",");
 				String word = strs[0];
 				double value = Double.parseDouble(strs[1]);
-				crystalized.wordToInt.put(word,i);
-				values.add(value);
+				crystalized.values.put(word, value);
 			}
-			i++;
 			
-			crystalized.weights = new double[i];
-			for(int j=0;j<i;j++) {
-				crystalized.weights[j] = values.get(j);
-			}
 			wordMap.setRelatorStatus(crystalized, true);
 			wordMap.addRelatorWords(crystalized);	
 			
 			r.close();
 			
+			return crystalized;
+			
 		} catch(IOException e) {
 			e.printStackTrace();
+			return null;
 		}
 	}
 	

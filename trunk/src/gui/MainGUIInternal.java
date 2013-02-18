@@ -286,4 +286,10 @@ public class MainGUIInternal extends MainGUI {
 	public void showRenderingProgress() {
 		renderingProgress.setVisible(true);
 	}
+
+	@Override
+	public void showClustering() {
+		// TODO Auto-generated method stub
+		
+	}
 }

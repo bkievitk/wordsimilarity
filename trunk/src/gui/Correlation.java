@@ -9,8 +9,6 @@ import java.util.Arrays;
 import java.util.Hashtable;
 
 import mdsj.MDSJ;
-import Jama.Matrix;
-import Jama.SingularValueDecomposition;
 
 import relations.beagle.VectorTools;
 import relations.helpers.WordRelationCrystalized;
@@ -44,8 +42,12 @@ public class Correlation {
 		
 		WordMap wordMap = new WordMap();
 		try {
-			WordRelationCrystalized en = new WordRelationCrystalized(Color.BLACK, wordMap, new BufferedReader(new FileReader(new File("results/english.csv"))));
-			WordRelationCrystalized fr = new WordRelationCrystalized(Color.BLACK, wordMap, new BufferedReader(new FileReader(new File("results/french.csv"))));
+			//WordRelationCrystalized en = new WordRelationCrystalized(Color.BLACK, wordMap, new BufferedReader(new FileReader(new File("results/english.csv"))));
+			//WordRelationCrystalized fr = new WordRelationCrystalized(Color.BLACK, wordMap, new BufferedReader(new FileReader(new File("results/french.csv"))));
+
+			String root = "../semantic_probabilisticBeagle/philpapers/";
+			WordRelationCrystalized en = new WordRelationCrystalized(Color.BLACK, wordMap, new BufferedReader(new FileReader(new File(root + "iep_allSim.csv"))));
+			WordRelationCrystalized fr = new WordRelationCrystalized(Color.BLACK, wordMap, new BufferedReader(new FileReader(new File(root + "sep_allSim.csv"))));
 			System.out.println(correlationProcrustes(en.weights, fr.weights));
 			
 			
@@ -131,21 +133,51 @@ public class Correlation {
 		return -1;
 	}
 	
+	public static void normalize(double[][] a) {
+		double max = a[1][0];
+		double min = a[1][0];
+		
+		for(int x=0;x<a.length;x++) {
+			for(int y=0;y<a[x].length;y++) {
+				if(x != y) {
+					a[x][y] = Math.max(0, a[x][y]);
+					max = Math.max(max, a[x][y]);
+					min = Math.min(min, a[x][y]);
+				}
+			}	
+		}
+		
+		for(int x=0;x<a.length;x++) {
+			for(int y=0;y<a[x].length;y++) {
+				if(x == y) {
+					a[x][y] = 0;
+				} else {
+					a[x][y] = (a[x][y] - min) / (max - min);
+					a[x][y] = 1 - a[x][y];
+				}
+				//System.out.print(a[x][y] + ",");
+			}	
+			//System.out.println();
+		}
+	}
+	
 	public static double[][][] transformProcrustes(double[][] a, double[][] b) {
 		
 		for(int x=0;x<a.length;x++) {
 			for(int y=0;y<a[x].length;y++) {
-				a[x][y] = 1 - a[x][y];
-				b[x][y] = 1 - b[x][y];
+				if(x == y) {
+					a[x][y] = 0;
+					b[x][y] = 0;
+				} else {
+					a[x][y] = Math.max(0.1, Math.min(.99, 1 - a[x][y]));
+					b[x][y] = Math.max(0.1, Math.min(.99, 1 - b[x][y]));
+				}
 			}	
 		}		
 		
 		double[][] mdsA = VectorTools.transpose(MDSJ.classicalScaling(a, 2));
 		double[][] mdsB = VectorTools.transpose(MDSJ.classicalScaling(b, 2));
 
-		VectorTools.show(a);
-		VectorTools.show(b);
-		
 		normalizeTranslation(mdsA);
 		normalizeTranslation(mdsB);
 				
@@ -158,7 +190,7 @@ public class Correlation {
 			mdsB[i][0] = -mdsB[i][0];
 		}
 		double[][] mdsB2 = normalizeRotation(mdsA, mdsB);
-
+	
 		double sumDiff1 = 0;
 		for(int i=0;i<mdsA.length;i++) {
 			sumDiff1 += VectorTools.dist(mdsA[i], mdsB1[i]);
@@ -168,6 +200,12 @@ public class Correlation {
 		for(int i=0;i<mdsA.length;i++) {
 			sumDiff2 += VectorTools.dist(mdsA[i], mdsB2[i]);
 		}
+
+		sumDiff1 /= mdsA.length;
+		sumDiff2 /= mdsA.length;
+		System.out.println("d1: " + sumDiff1);
+		System.out.println("d2: " + sumDiff2);
+		System.out.println("Avg dist: " + Math.min(sumDiff1,sumDiff2));
 		
 		if(sumDiff1 > sumDiff2) {
 			double[][][] ret = {mdsA,mdsB2};
@@ -176,6 +214,55 @@ public class Correlation {
 			double[][][] ret = {mdsA,mdsB1};
 			return ret;
 		}
+	}
+
+	public static double weightProcrustes(double[][] a, double[][] b) {
+
+		for(int x=0;x<a.length;x++) {
+			for(int y=0;y<a[x].length;y++) {
+				if(x == y) {
+					a[x][y] = 0;
+					b[x][y] = 0;
+				} else {
+					a[x][y] = Math.max(0.1, Math.min(.99, 1 - a[x][y]));
+					b[x][y] = Math.max(0.1, Math.min(.99, 1 - b[x][y]));
+				}
+			}	
+		}
+		
+		//normalize(a);
+		//normalize(b);
+		
+		double[][] mdsA = VectorTools.transpose(MDSJ.classicalScaling(a, 2));
+		double[][] mdsB = VectorTools.transpose(MDSJ.classicalScaling(b, 2));
+
+		normalizeTranslation(mdsA);
+		normalizeTranslation(mdsB);
+				
+		normalizeScaling(mdsA);
+		normalizeScaling(mdsB);
+
+		double[][] mdsB1 = normalizeRotation(mdsA, mdsB);
+		
+		for(int i=0;i<mdsB.length;i++) {
+			mdsB[i][0] = -mdsB[i][0];
+		}
+		double[][] mdsB2 = normalizeRotation(mdsA, mdsB);
+	
+		double sumDiff1 = 0;
+		for(int i=0;i<mdsA.length;i++) {
+			sumDiff1 += VectorTools.dist(mdsA[i], mdsB1[i]);
+		}
+		
+		double sumDiff2 = 0;
+		for(int i=0;i<mdsA.length;i++) {
+			sumDiff2 += VectorTools.dist(mdsA[i], mdsB2[i]);
+		}
+
+		sumDiff1 /= mdsA.length;
+		sumDiff2 /= mdsA.length;
+		
+		return Math.min(sumDiff1, sumDiff2);
 	}
 	
 	private static double[][] normalizeRotation(double[][] mdsA, double[][] mdsB) {
@@ -206,16 +293,21 @@ public class Correlation {
 					
 		for(int x=0;x<a.length;x++) {
 			for(int y=0;y<a[x].length;y++) {
-				a[x][y] = 1 - a[x][y];
-				b[x][y] = 1 - b[x][y];
+				if(x == y) {
+					a[x][y] = 0;
+					b[x][y] = 0;
+				} else {
+					a[x][y] = Math.max(0.01, Math.min(.99, 1 - a[x][y]));
+					b[x][y] = Math.max(0.01, Math.min(.99, 1 - b[x][y]));
+				}
 			}	
 		}		
 		
 		double[][] mdsA = VectorTools.transpose(MDSJ.classicalScaling(a, 2));
 		double[][] mdsB = VectorTools.transpose(MDSJ.classicalScaling(b, 2));
 
-		VectorTools.show(a);
-		VectorTools.show(b);
+		//VectorTools.show(mdsA);
+		//VectorTools.show(mdsB);
 		
 		normalizeTranslation(mdsA);
 		normalizeTranslation(mdsB);
@@ -270,32 +362,6 @@ public class Correlation {
 		return sumDiff / mdsA.length;
 	}
 	
-	public static double procrustes2(double[][] a, double[][] b) {
-
-		normalizeTranslation(a);
-		normalizeTranslation(b);
-
-		normalizeScaling(a);
-		normalizeScaling(b);
-		
-		Matrix aM = new Matrix(a); 
-		Matrix bM = new Matrix(b); 
-		Matrix aMtbM = aM.transpose().times(bM);
-		
-		SingularValueDecomposition svd = aMtbM.svd();
-
-		Matrix r = svd.getU().times(svd.getV());
-		
-		double sum = 0;
-		for(int x=0;x<r.getRowDimension();x++) {
-			for(int y=0;y<r.getColumnDimension();y++) {
-				sum += r.get(x, y) * r.get(x, y);
-			}	
-		}
-		
-		return sum;
-	}
-	
 	public static void normalizeTranslation(double[][] values) {
 		double[] sum = new double[values[0].length];
 		for(double[] vec : values) {
@@ -313,6 +379,20 @@ public class Correlation {
 		}
 	}
 
+	/*
+	public static void normalizeScaling2(double[][] values) {
+		double sum = 0;
+		for(int i=0;i<values.length;i++) {
+			sum += VectorTools.dist(values[i]);
+		}
+		sum /= values.length;
+		
+		for(int i=0;i<values.length;i++) {
+			
+		}
+	}
+	*/
+	
 	public static void normalizeScaling(double[][] values) {
 		
 		double sumOfSums = 0;

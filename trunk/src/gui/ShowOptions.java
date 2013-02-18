@@ -60,13 +60,16 @@ public class ShowOptions extends JTabbedPane {
 
 		final JRadioButton constant = new JRadioButton("Constant Color");
 		final JRadioButton pos = new JRadioButton("Part of Speach Color");
+		final JRadioButton individual = new JRadioButton("Individual Color");
 		ButtonGroup group = new ButtonGroup();
 		group.add(constant);
 		group.add(pos);
+		group.add(individual);
 		pos.setSelected(true);
 
 		colorPanel.add(constant);
 		colorPanel.add(pos);
+		colorPanel.add(individual);
 		
 		ChangeListener cl = new ChangeListener() {
 			public void stateChanged(ChangeEvent e) {
@@ -74,6 +77,8 @@ public class ShowOptions extends JTabbedPane {
 					options.coloringType = Options.COLORING_CONSTANT;
 				} else if(pos.isSelected()) {
 					options.coloringType = Options.COLORING_POS;
+				} else if(individual.isSelected()) {
+					options.coloringType = Options.COLORING_OPEN;
 				}
 				visualization.visualizationChanged();
 			}			
@@ -133,9 +138,10 @@ public class ShowOptions extends JTabbedPane {
 		labels.put(100, new JLabel("%100"));
 		labels.put(200, new JLabel("%200"));
 		labels.put(400, new JLabel("%400"));
-		labels.put(400, new JLabel("%800"));
-		multiple.setMinimum(50);
-		multiple.setMaximum(800);
+		labels.put(800, new JLabel("%800"));
+		labels.put(1600, new JLabel("%1600"));
+		multiple.setMinimum(10);
+		multiple.setMaximum(6400);
 		multiple.setLabelTable(labels);
 		multiple.setPaintLabels(true);
 		multiple.setValue(100);

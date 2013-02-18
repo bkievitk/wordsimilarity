@@ -18,10 +18,12 @@ public class WordNode implements Comparable<WordNode>, Serializable {
 	public double[] location;
 	private int count;
 	public BufferedImage img = null;
+	public Color color = null;
 
 	public static final int X = 0;
 	public static final int Y = 1;
 	public static final int Z = 2;
+	
 	
 	public void setImage(BufferedImage img) {
 		this.img = img;
@@ -53,7 +55,6 @@ public class WordNode implements Comparable<WordNode>, Serializable {
 		new Color(255,255,255,100),};
 	
 	public static String[] posNames = {"Unk","Adj","Adv","Noun","Verb","Mult"};
-	//public Color posColor = posColors[0]; 
 	private int pos;
 	
 	public void updatePOS() {
@@ -80,6 +81,12 @@ public class WordNode implements Comparable<WordNode>, Serializable {
 			return options.nodeColor;
 		} else if(options.coloringType == Options.COLORING_POS) {
 			return posColors[pos];
+		} else if(options.coloringType == Options.COLORING_OPEN) {
+			if(color == null) {
+				return Color.BLACK;
+			} else {
+				return color;
+			}
 		} else {
 			return Color.BLACK;
 		}

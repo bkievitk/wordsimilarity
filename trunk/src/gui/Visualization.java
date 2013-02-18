@@ -113,7 +113,8 @@ public class Visualization extends JPanel implements MouseListener, MouseMotionL
 					}
 
 					if(getWidth() > 0 && getHeight() > 0) {
-						BufferedImage image = new BufferedImage(getWidth(),getHeight(),BufferedImage.TYPE_INT_RGB);												
+						
+						BufferedImage image = new BufferedImage(getWidth(),getHeight(),BufferedImage.TYPE_INT_ARGB);												
 						Graphics2D g2 = (Graphics2D)image.getGraphics();
 									
 						if(background != null) {

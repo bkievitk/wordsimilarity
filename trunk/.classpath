@@ -16,5 +16,6 @@
 	<classpathentry kind="lib" path="lib/sspace-lib-1.7.1.jar"/>
 	<classpathentry kind="lib" path="lib/flickrapi-1.2.jar"/>
 	<classpathentry kind="lib" path="lib/flanagan.jar"/>
+	<classpathentry kind="lib" path="lib/weka.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
