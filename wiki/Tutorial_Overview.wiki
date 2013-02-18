@@ -13,6 +13,6 @@ There are three major steps in using word 2 word.
 
 This wiki guide is divided into three main parts, setup, tutorial and information.
 
-Setup will help you install the software and get it running.
-Tutorial will lead you through a set of examples. We think this is the easiest way to get antiquated with this tool.
-Information will go into more in-depth information on the details of the system.
+  * [Setup] will help you install the software and get it running.
+  * [Tutorial] will lead you through a set of examples. We think this is the easiest way to get antiquated with this tool.
+  * [Information] will go into more in-depth information on the details of the system.
