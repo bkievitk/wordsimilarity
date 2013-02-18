@@ -38,7 +38,7 @@ public class LegendGUI extends JPanel {
 			}			
 		});
 				
-		add(new JLabel("Part Of Speech Label",JLabel.CENTER));
+		add(new JLabel("Part Of Speach Label",JLabel.CENTER));
 		
 		JPanel posColors = new JPanel() {
 			public void paintComponent(Graphics g2) {

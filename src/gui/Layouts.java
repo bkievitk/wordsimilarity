@@ -1,11 +1,17 @@
 package gui;
 
 import java.awt.Dimension;
+import java.util.Arrays;
+import java.util.Hashtable;
 import java.util.Random;
+import java.util.Set;
+import java.util.Vector;
+
 import mdsj.MDSJ;
 import relations.WordRelator;
 import tools.TransformMy3D;
 import tools.Tsne;
+import tools.VectorTools;
 
 /**
  * The layout manager provides a set of layouts for the word nodes.
@@ -17,6 +23,85 @@ public class Layouts {
 
 	public static final Random rand = new Random();
 
+	public static void translationLayout(WordMap wordMap, Hashtable<String,Integer> language1, Hashtable<String,Integer> language2) {
+				
+		int[] match = 	{0,1,2,2,2,3,3,4,4,5,5,5,5,6,6,7,8,9,10,10,10,11,11,12,13,13,13,14,15,15,16,13,4,10,6,6,4};
+		int[] counts = new int[17];
+		
+		for(String s : language1.keySet()) {
+			wordMap.setWordStatus(s, true);
+			
+			int x = match[language1.get(s)];
+			counts[x]++;
+			
+			wordMap.activeWords.get(s).location[0] = x;
+			wordMap.activeWords.get(s).location[1] = counts[x];
+		}
+		
+		for(String s : language2.keySet()) {
+			wordMap.setWordStatus(s, true);
+			wordMap.activeWords.get(s).location[0] = language2.get(s);
+			wordMap.activeWords.get(s).location[1] = 0;
+		}
+	}
+	
+	public static void layoutProcrustes(WordMap wordMap, WordRelator wr1, WordRelator wr2, WordRelator trans) {
+		String[] words1 = wr1.getWords().toArray(new String[0]);
+		String[] words2 = wr2.getWords().toArray(new String[0]);
+		Arrays.sort(words1);
+
+		Vector<String> words1Order = new Vector<String>();
+		Vector<String> words2Order = new Vector<String>();
+		
+		for(String word1 : words1) {
+			if(wordMap.activeWords.get(word1) != null) {
+				for(String word2 : words2) {
+					if(wordMap.activeWords.get(word2) != null) {
+						if((trans == null && word1.equals(word2)) || (trans != null && trans.getDistance(word1, word2) > .99)) {
+							words1Order.add(word1);
+							words2Order.add(word2);
+							break;
+						}
+					}
+				}
+			}
+		}
+		
+		//for(int i=0;i<words1Order.size();i++) {
+		//	System.out.println(words1Order.get(i) + " " + words2Order.get(i));
+		//}
+
+		double[][] sim1 = new double[words1Order.size()][words1Order.size()];
+		for(int i=0;i<sim1.length;i++) {
+			for(int j=0;j<sim1.length;j++) {
+				sim1[i][j] = wr1.getDistance(words1Order.get(i), words1Order.get(j));
+			}
+		}
+		
+		double[][] sim2 = new double[words2Order.size()][words2Order.size()];
+		for(int i=0;i<sim2.length;i++) {
+			for(int j=0;j<sim2.length;j++) {
+				sim2[i][j] = wr2.getDistance(words2Order.get(i), words2Order.get(j));
+			}
+		}
+						
+		double[][][] ret = Correlation.transformProcrustes(sim1, sim2);
+		double[][] pos1 = ret[0];
+		double[][] pos2 = ret[1];
+		
+		for(int i=0;i<words1Order.size();i++) {
+			WordNode wn = wordMap.words.get(words1Order.get(i));
+			double[] loc = {pos1[i][0], pos1[i][1], 0};
+			wn.location = loc;
+		}
+		
+		for(int i=0;i<words2Order.size();i++) {
+			WordNode wn = wordMap.words.get(words2Order.get(i));
+			double[] loc = {pos2[i][0], pos2[i][1], 0};
+			wn.location = loc;
+		}
+	}
+	
 	/**
 	 * Place randomly around the available space.
 	 * @param wordMap
@@ -79,15 +164,12 @@ public class Layouts {
 			}
 						
 			if(relator1Sum + relator2Sum == 0) {
-				word1.location[0] = .7;
+				word1.location[0] = .5;
 			} else {
 				word1.location[0] = relator1Sum / (relator1Sum + relator2Sum);
 			}
 			
-			//System.out.println(relator1Sum + " " + relator2Sum + " " + word1.location[0]);
-			
-			
-			word1.location[1] = rand.nextDouble();
+			word1.location[1] = relator1Sum + relator2Sum;
 			word1.location[2] = 0;
 			
 		}
@@ -239,6 +321,30 @@ public class Layouts {
 		double[][] dists = new double[wordMap.getActiveWordNodeList().size()][wordMap.getActiveWordNodeList().size()];
 		int x,y;
 		
+		/*
+		double max = 0;
+		double min = 0;
+		x = 0;
+		for(WordNode t1 : wordMap.getActiveWordNodeList()) {
+			y = 0;
+			for(WordNode t2 : wordMap.getActiveWordNodeList()) {
+				dists[x][y] = wordRelator.getDistance(t1.word, t2.word);
+				max = Math.max(max, dists[x][y]);
+				min = Math.min(min, dists[x][y]);
+				y++;
+			}
+			x++;
+		}
+		
+		for(int i=0;i<dists.length;i++) {
+			for(int j=0;j<dists.length;j++) {
+				double scalled = Math.max(0, Math.min(1, dists[i][j]));
+				scalled = Math.pow(scalled, .1);
+				dists[i][j] = scalled;
+			}	
+		}
+		*/
+		
 		x = 0;
 		for(WordNode t1 : wordMap.getActiveWordNodeList()) {
 			y = 0;
@@ -246,12 +352,14 @@ public class Layouts {
 				if(t1 == t2) {
 					dists[x][y] = 0;
 				} else {
-					dists[x][y] = 1 - wordRelator.getDistance(t1.word, t2.word);
+					dists[x][y] = Math.max(.01, Math.min(.99, 1 - wordRelator.getDistance(t1.word, t2.word)));
+					//dists[x][y] = Math.acos(wordRelator.getDistance(t1.word, t2.word));
 				}
 				y++;
 			}
 			x++;
 		}
+		
 		
 		double[][] newSpace;
 		
@@ -261,10 +369,13 @@ public class Layouts {
 			newSpace = MDSJ.classicalScaling(dists, 2);
 		}
 		
+		VectorTools.show(newSpace);
+		
 		int i=0;
 		for(WordNode t1 : wordMap.getActiveWordNodeList()) {
 			double x1 = (newSpace[0][i] + .5) * dim.width;
 			double y1 = (newSpace[1][i] + .5) * dim.height;
+			t1.location = new double[3];
 			t1.location[0] = x1;
 			t1.location[1] = y1;			
 			

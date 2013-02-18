@@ -23,4 +23,5 @@ public abstract class MainGUI extends JPanel implements VisualizationInterface {
 	public abstract void showOptions();
 	public abstract void showWizardFrame();
 	public abstract void showRenderingProgress();
+	public abstract void showClustering();
 }

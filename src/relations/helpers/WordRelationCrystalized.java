@@ -25,12 +25,33 @@ public class WordRelationCrystalized extends WordRelator {
 		return wordToInt.keySet();
 	}
 	
+	public WordRelationCrystalized(Color color, String name, WordMap wordMap, Hashtable<String,Integer> wordToInt, double[][] weights) {
+		super(color, name, wordMap);
+		this.wordToInt = wordToInt;
+		this.weights = weights;
+	}
+	
 	public WordRelationCrystalized(Color color, String name, WordMap wordMap) {
 		super(color, name, wordMap);
 	}
-	
+
+
 	public WordRelationCrystalized(Color color, WordMap wordMap, BufferedReader input) {
 		super(color,readName(input),wordMap);
+		init(color,wordMap,input,"", "");
+	}
+	
+	public WordRelationCrystalized(Color color, WordMap wordMap, BufferedReader input, String name) {
+		super(color,name,wordMap);
+		init(color,wordMap,input,"", "");
+	}
+	
+	public WordRelationCrystalized(Color color, WordMap wordMap, BufferedReader input, String tagStart, String tagStop) {
+		super(color,readName(input),wordMap);
+		init(color,wordMap,input,tagStart, tagStop);
+	}
+	
+	private void init(Color color, WordMap wordMap, BufferedReader input, String tagStart, String tagStop) {
 		
 		if(name == WordRelator.ERROR_INITIALIZING) {
 			return;
@@ -43,7 +64,7 @@ public class WordRelationCrystalized extends WordRelator {
 			wordToInt = new Hashtable<String,Integer>();
 			
 			for(int i=1;i<words.length;i++) {
-				wordToInt.put(words[i],wordToInt.size());
+				wordToInt.put(tagStart + words[i] + tagStop,wordToInt.size());
 			}
 			weights = new double[words.length-1][words.length-1];
 			

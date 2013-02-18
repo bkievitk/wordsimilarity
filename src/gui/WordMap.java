@@ -302,7 +302,7 @@ public class WordMap implements Serializable {
 		relationChange.add(new ChangeListener() {
 			public void stateChanged(ChangeEvent e) {
 				combo.removeAllItems();
-				for(WordRelator relator : activeRelations) {
+				for(WordRelator relator : activeRelations.toArray(new WordRelator[0])) {
 					combo.addItem(relator);
 				}
 			}
@@ -543,8 +543,8 @@ public class WordMap implements Serializable {
 			
 			if(word1.img != null) {
 				g.drawImage(word1.img, word1.getX() - radius, word1.getY() - radius, radius * 2, radius * 2, null);
-				g.setColor(Color.BLACK);
-				g.drawRect(word1.getX()-radius, word1.getY()-radius, radius*2, radius*2);
+				//g.setColor(Color.BLACK);
+				//g.drawRect(word1.getX()-radius, word1.getY()-radius, radius*2, radius*2);
 			} else {
 				g.setColor(word1.getColor(options));			
 				g.fillOval(word1.getX()-radius, word1.getY()-radius, radius*2, radius*2);

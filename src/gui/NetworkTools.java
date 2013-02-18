@@ -13,6 +13,7 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Vector;
@@ -94,11 +95,11 @@ public class NetworkTools extends JTabbedPane {
 		return new Color(r,gr,b);
 	}
 
-	private static final int SELECT_UNION = 0;
-	private static final int SELECT_FIRST = 1;
-	private static final int SELECT_AVERAGE = 2;
-	private static final int SELECT_INTERSECTION = 3;
-	private static final String[] SELECT_NAMES = {"Union","First","Average","Intersection"};
+	public static final int SELECT_UNION = 0;
+	public static final int SELECT_FIRST = 1;
+	public static final int SELECT_AVERAGE = 2;
+	public static final int SELECT_INTERSECTION = 3;
+	public static final String[] SELECT_NAMES = {"Union","First","Average","Intersection"};
 		
 	private Container heatMapContainer() {
 
@@ -123,7 +124,7 @@ public class NetworkTools extends JTabbedPane {
 				
 				Vector<WeightedObject<WordNode>> weights = new Vector<WeightedObject<WordNode>>();
 				for(WordNode word : wordMap.activeWords.values()) {
-					double sim = wordSimilarityOverSetSize(text, 400, 401, (WordRelator)relator1.getSelectedItem(), (WordRelator)relator2.getSelectedItem(), word.word, SELECT_AVERAGE, Correlation.DISTANCE_SPEARMAN)[0];					
+					double sim = wordSimilarityOverSetSize(text, 400, 401, (WordRelator)relator1.getSelectedItem(), (WordRelator)relator2.getSelectedItem(), word.word, SELECT_AVERAGE, Correlation.DISTANCE_SPEARMAN)[0][0];					
 					weights.add(new WeightedObject<WordNode>(word, sim));
 				}
 				setHeatMap(weights);
@@ -196,7 +197,7 @@ public class NetworkTools extends JTabbedPane {
 		v.repaint();
 	}
 	
-	private double[] wordSimilarityOverSetSize(JTextArea text, int min, int max, WordRelator wr1, WordRelator wr2, String targetWord, int wordSelect, int similarityMeasure) {
+	public static double[][] wordSimilarityOverSetSize(JTextArea text2, int min, int max, WordRelator wr1, WordRelator wr2, String targetWord, int wordSelect, int similarityMeasure) {
 		
 		// Get the top n results for both comparators.		
 		KBox<String> box1 = new KBox<String>(max, true);		
@@ -218,24 +219,27 @@ public class NetworkTools extends JTabbedPane {
 		}
 		
 		// Clear text.
-		text.setText("");
+		if(text2 != null) {
+			text2.setText("");
+		}
 		
 		// Entry for each result.
 		double[] results = new double[max-min+1];
-		
+		double[] counts = new double[max-min+1];		
 		
 		// For each n.
 		for(int n=min;n<=max;n++) {
 			
 			String[] topWords = null;
 			
-			
+			int minN = Math.min(n, Math.min(box1.size(), box2.size()));
+					
 			switch(wordSelect) {
 				case SELECT_UNION:
 					
 					// Add words that are in the top n of either comparator.
 					HashSet<String> words = new HashSet<String>();
-					for(int i=0;i<n;i++) {
+					for(int i=0;i<minN;i++) {
 						
 						// Comparator 1
 						String word = box1.getObject(i).object;
@@ -258,7 +262,7 @@ public class NetworkTools extends JTabbedPane {
 
 					// Add all words that are in the top n of the first comparator.
 					words = new HashSet<String>();
-					for(int i=0;i<n;i++) {
+					for(int i=0;i<minN;i++) {
 						String word = box1.getObject(i).object;
 						if(word != null) {
 							words.add(word);
@@ -283,7 +287,7 @@ public class NetworkTools extends JTabbedPane {
 					HashSet<String> w1 = new HashSet<String>();
 					HashSet<String> w2 = new HashSet<String>();
 
-					for(int i=0;i<n;i++) {
+					for(int i=0;i<minN;i++) {
 						String word = box1.getObject(i).object;
 						if(word != null) {
 							w1.add(word);
@@ -303,6 +307,7 @@ public class NetworkTools extends JTabbedPane {
 			}
 			
 			int count = topWords.length;
+			counts[n-min] = n;
 			
 			if(count > 0) {								
 				
@@ -374,16 +379,252 @@ public class NetworkTools extends JTabbedPane {
 				}
 				
 				// Save results.
-				text.append(val + ",");
+				if(text2 != null) {
+					text2.append(val + ",");
+				}
+				results[n-min] = val;
+			} else {
+				results[n-min] = -100;
+			}
+		}
+
+		double[][] ret = {results, counts};
+		return ret;
+	}
+
+	public static double[][] wordSimilarityOverSetSizeNAsSetSize(JTextArea text2, int min, int max, WordRelator wr1, WordRelator wr2, String targetWord, int wordSelect, int similarityMeasure) {
+		
+		// Get the top n results for both comparators.	
+		WeightedObject<String>[] box1 = new WeightedObject[wr1.getWords().size()];
+		WeightedObject<String>[] box2 = new WeightedObject[wr2.getWords().size()];
+		
+		Comparator<WeightedObject<String>> backwards = new Comparator<WeightedObject<String>>() {
+			public int compare(WeightedObject<String> arg0, WeightedObject<String> arg1) {
+				return -arg0.compareTo(arg1);
+			}
+		};
+		
+		if(wordSelect == SELECT_AVERAGE) {
+			int i = 0;
+			for(String word : wr1.getWords()) {
+				box1[i] = new WeightedObject<String>(word, 
+						wr1.getDistance(targetWord, word) +
+						wr2.getDistance(targetWord, word));
+				i++;
+			}
+			Arrays.sort(box1, backwards);
+		} else {
+			int i = 0;
+			for(String word : wr1.getWords()) {
+				box1[i] =new WeightedObject<String>(word, wr1.getDistance(targetWord, word));
+				i++;
+			}			
+			i = 0;
+			for(String word : wr2.getWords()) {
+				box2[i] = new WeightedObject<String>(word, wr2.getDistance(targetWord, word));
+				i++;
+			}
+			Arrays.sort(box1, backwards);
+			Arrays.sort(box2, backwards);
+		}
+		
+		
+		// Clear text.
+		if(text2 != null) {
+			text2.setText("");
+		}
+		
+		// Entry for each result.
+		double[] results = new double[max-min+1];
+		double[] counts = new double[max-min+1];
+		
+		
+		// For each n.
+		for(int n=min;n<=max;n++) {
+			
+			String[] topWords = null;
+					
+			switch(wordSelect) {
+				case SELECT_UNION:
+					
+					// Add words that are in the top n of either comparator.
+					HashSet<String> words = new HashSet<String>();
+					for(int i=0;words.size() < n;i++) {
+						
+						if(i >= box1.length || i >= box2.length) {
+							break;
+						}
+						
+						// Comparator 1
+						String word = box1[i].object;
+						if(word != null) {
+							words.add(word);
+						}
+	
+						// Comparator 2
+						word = box2[i].object;
+						if(word != null) {
+							words.add(word);
+						}
+					}	
+					
+					// To list.
+					topWords = words.toArray(new String[0]);
+				break;
+				
+				case SELECT_FIRST:
+					
+					// Add all words that are in the top n of the first comparator.
+					words = new HashSet<String>();
+					for(int i=0;words.size() < n;i++) {
+	
+						if(i >= box1.length) {
+							break;
+						}
+						
+						String word = box1[i].object;
+						if(word != null) {
+							words.add(word);
+						}
+					}
+					
+					// To list
+					topWords = words.toArray(new String[0]);					
+				break;
+				
+				case SELECT_AVERAGE:
+					
+					// Actually average
+					topWords = new String[Math.min(n, box1.length)];
+					for(int i=0;i<topWords.length;i++) {
+						topWords[i] = box1[i].object;
+					}
+					
+				break;
+				case SELECT_INTERSECTION:
+	
+					HashSet<String> w1 = new HashSet<String>();
+					HashSet<String> w2 = new HashSet<String>();
+					HashSet<String> between = new HashSet<String>();
+	
+					for(int i=0;between.size() < n;i++) {
+						
+						if(i >= box1.length || i >= box2.length) {
+							break;
+						}
+						
+						String word = box1[i].object;
+						if(word != null) {
+							if(!between.contains(word) && w2.contains(word)) {
+								between.add(word);
+							}
+							w1.add(word);
+						}
+						word = box2[i].object;
+						if(word != null) {
+							if(!between.contains(word) && w1.contains(word)) {
+								between.add(word);
+							}
+							w2.add(word);
+						}
+					}
+					
+					if(n % 10 == 0) {
+						System.out.print(n + " ");
+					}
+					
+					// To list
+					topWords = between.toArray(new String[0]);
+					
+				break;
+			}
+			
+			int count = topWords.length;
+			counts[n-min] = count;
+			
+			if(count > 0) {								
+				
+				// Get new ranks for list 1.
+				WeightedObject<String>[] rank1 = new WeightedObject[count];
+				for(int j=0;j<topWords.length;j++) {
+					rank1[j] = new WeightedObject<String>(topWords[j], wr1.getDistance(targetWord, topWords[j]));
+				}				
+				Arrays.sort(rank1);		
+				
+				// Get new ranks for list 2.
+				WeightedObject<String>[] rank2 = new WeightedObject[count];
+				for(int j=0;j<topWords.length;j++) {
+					rank2[j] = new WeightedObject<String>(topWords[j], wr2.getDistance(targetWord, topWords[j]));
+				}				
+				Arrays.sort(rank2);	
+				
+				
+				Hashtable<Object,Integer> rank2_a = new Hashtable<Object,Integer>();
+				for(int j=0;j<rank2.length;j++) {
+					rank2_a.put(rank2[j].object, j + 1);
+				}
+				
+				double val = 0;
+				
+				if(similarityMeasure >= Correlation.DISTANCE_SPEARMAN && similarityMeasure <= Correlation.DISTANCE_CONTENTIOUS) {
+					
+					int[] p1 = new int[rank1.length];
+					for(int i=0;i<p1.length;i++) {
+						p1[i] = i;
+					}
+					
+					int[] p2 = new int[rank1.length];
+					for(int i=0;i<p1.length;i++) {
+						p2[i] = rank2_a.get(rank1[i].object) - 1;
+					}
+					
+					val = Correlation.distance(p1, p2, similarityMeasure);
+					
+				} else if(similarityMeasure == Correlation.CORRELATION_PEARSON) {
+					double[] x = new double[rank1.length];
+					for(int i=0;i<x.length;i++) {
+						x[i] = rank1[i].weight;
+					}
+					
+					double[] y = new double[rank1.length];
+					for(int i=0;i<y.length;i++) {
+						y[i] = rank2[rank2_a.get(rank1[i].object) - 1].weight;
+					}
+					
+					val = Correlation.distance(x, y, similarityMeasure);
+				} else if(similarityMeasure == Correlation.CORRELATION_PROCRUSTES) {
+					
+					double[][] x = new double[topWords.length][topWords.length];
+					double[][] y = new double[topWords.length][topWords.length];
+					for(int i=0;i<topWords.length;i++) {
+						for(int j=0;j<topWords.length;j++) {
+							if(i == j) {
+								x[i][j] = 0;
+								y[i][j] = 0;
+							} else {
+								x[i][j] = 1 - wr1.getDistance(topWords[i], topWords[j]);
+								y[i][j] = 1 - wr2.getDistance(topWords[i], topWords[j]);
+							}
+						}
+					}
+										
+					val = Correlation.distance(x, y, similarityMeasure);
+				}
+				
+				// Save results.
+				if(text2 != null) {
+					text2.append(val + ",");
+				}
 				results[n-min] = val;
 			} else {
 				results[n-min] = -100;
 			}
 		}
 		
-		return results;
+		double[][] ret = {results, counts};
+		return ret;
 	}
-	
+		
 	public Container wordSimilarityOverSetSizeContainer() {
 		//JPanel ret = new JPanel(new GridLayout(0,1));
 		Container ret = Box.createVerticalBox();
@@ -498,7 +739,7 @@ public class NetworkTools extends JTabbedPane {
 						}
 					}
 					
-					double sim = wordSimilarityOverSetSize(text, minSlider.getValue(), minSlider.getValue()+1, (WordRelator)relator1.getSelectedItem(), (WordRelator)relator2.getSelectedItem(), word.word, selectType, similarityType)[0];					
+					double sim = wordSimilarityOverSetSize(text, minSlider.getValue(), minSlider.getValue(), (WordRelator)relator1.getSelectedItem(), (WordRelator)relator2.getSelectedItem(), word.word, selectType, similarityType)[0][0];					
 					weights.add(new WeightedObject<WordNode>(word, sim));
 				}
 				setHeatMap(weights);
@@ -540,7 +781,7 @@ public class NetworkTools extends JTabbedPane {
 							}
 						}
 						
-						double sim = wordSimilarityOverSetSize(text, index, index+1, (WordRelator)relator1.getSelectedItem(), (WordRelator)relator2.getSelectedItem(), word.word, selectType, similarityType)[0];					
+						double sim = wordSimilarityOverSetSize(text, index, index+1, (WordRelator)relator1.getSelectedItem(), (WordRelator)relator2.getSelectedItem(), word.word, selectType, similarityType)[0][0];					
 						weights.add(new WeightedObject<WordNode>(word, sim));
 					}
 					BufferedImage image = createHeatMap(weights);
@@ -607,7 +848,7 @@ public class NetworkTools extends JTabbedPane {
 					double[] results = wordSimilarityOverSetSize(text, min, max, 
 							(WordRelator)relator1.getSelectedItem(), 
 							(WordRelator)relator2.getSelectedItem(), 
-							word.getText(), selectType, similarityType);
+							word.getText(), selectType, similarityType)[0];
 					
 					
 					double[] xs = new double[max-min+1];

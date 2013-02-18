@@ -1,5 +1,6 @@
 package gui;
 
+import java.awt.Color;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeEvent;
@@ -13,6 +14,7 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 
 import relations.WordRelator;
+import relations.beagle.VectorTools;
 import tools.FlickrImage;
 import tools.GoogleImage;
 import tools.WeightedObject;
@@ -61,7 +63,6 @@ public class AdvancedMenu {
 		menu.add(buildHelpMenu(main));	
 		return menu;
 	}
-	
 	
 	/**
 	 * File controls IO.
@@ -281,6 +282,33 @@ public class AdvancedMenu {
 				});
 			file.add(load);	
 			
+			JMenuItem loadTypes = new JMenuItem("Load types");
+			loadTypes.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent arg0) {
+					
+					Hashtable<String,Color> colors = new Hashtable<String,Color>();
+					colors.put("unknown", new Color(100,100,100));
+					colors.put("journal", new Color(150,150,150));
+					colors.put("work",    new Color(200,200,200));
+					colors.put("thinker", Color.GREEN);
+					colors.put("idea", Color.RED);
+					colors.put("school_of_thought", Color.BLUE);
+				
+					JFileChooser chooser = new JFileChooser(new File("."));
+					chooser.showOpenDialog(null);
+					
+					try {
+						IO.loadColorCodes(wordMap, new BufferedReader(new FileReader(chooser.getSelectedFile())), colors);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+
+					main.options.coloringType = Options.COLORING_OPEN;
+					wordMap.relationChanged();
+				}
+			});
+			file.add(loadTypes);	
+			
 			JMenuItem loadWeb = new JMenuItem("Load Web");
 			loadWeb.addActionListener(new ActionListener() {
 				@SuppressWarnings("unchecked")
@@ -481,7 +509,7 @@ public class AdvancedMenu {
 				}
 			});
 			tools.add(networkToolsMenu);
-			
+
 			JMenuItem showOptionsMenu = new JMenuItem("Show Options");
 			showOptionsMenu.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent arg0) {
@@ -489,6 +517,14 @@ public class AdvancedMenu {
 				}
 			});
 			tools.add(showOptionsMenu);
+			
+			JMenuItem clusterMenu = new JMenuItem("Clustering");
+			clusterMenu.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent arg0) {
+					main.showClustering();
+				}
+			});
+			tools.add(clusterMenu);
 			
 		return tools;
 	}
@@ -627,17 +663,27 @@ public class AdvancedMenu {
 	                    wordMap.activeRelations.toArray(),
 	                    null);
 				
-
-				WordRelator trans = (WordRelator)JOptionPane.showInputDialog(
+				Object[] os1 = wordMap.activeRelations.toArray();
+				Object[] os = new Object[os1.length + 1];
+				os[0] = "-- No Translation --";
+				for(int i=0;i<os1.length;i++) {
+					os[i+1] = os1[i];
+				}
+				
+				Object result = JOptionPane.showInputDialog(
 	                    null,
 	                    "Translation.",
 	                    "Comparator Selection",
 	                    JOptionPane.PLAIN_MESSAGE,
 	                    null,
-	                    wordMap.activeRelations.toArray(),
-	                    null);
+	                    os,
+	                    os[0]);
 
-
+				WordRelator trans = null;
+				if(!(result instanceof String)) {
+					trans = (WordRelator)result;
+				}
+						
 				Set<String> words1 = wr1.getWords();
 				Set<String> words2 = wr2.getWords();
 
@@ -647,10 +693,12 @@ public class AdvancedMenu {
 				for(String word1 : words1) {
 					if(wordMap.activeWords.get(word1) != null) {
 						for(String word2 : words2) {
-							if(!word1.equals(word2) && wordMap.activeWords.get(word2) != null && trans.getDistance(word1, word2) > .99) {
-								words1Order.add(word1);
-								words2Order.add(word2);
-								break;
+							if(wordMap.activeWords.get(word2) != null) {
+								if((trans == null && word1.equals(word2)) || (trans != null && trans.getDistance(word1, word2) > .99)) {
+									words1Order.add(word1);
+									words2Order.add(word2);
+									break;
+								}
 							}
 						}
 					}
@@ -669,6 +717,8 @@ public class AdvancedMenu {
 						sim2[i][j] = wr2.getDistance(words2Order.get(i), words2Order.get(j));
 					}
 				}
+				
+
 				
 				double[][][] ret = Correlation.transformProcrustes(sim1, sim2);
 				double[][] pos1 = ret[0];

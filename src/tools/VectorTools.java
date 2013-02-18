@@ -14,6 +14,17 @@ public class VectorTools {
 	// Randomness.
 	public static Random rand = new Random();
 
+
+	public static double[][] copy(double[][] v) {
+		double[][] ret = new double[v.length][v[0].length];
+		for(int i=0;i<v.length;i++) {
+			for(int j=0;j<v[0].length;j++) {
+				ret[i][j] = v[i][j];
+			}
+		}
+		return ret;
+	}
+	
 	public static double[] toDouble(int[] vals) {
 		double[] ret = new double[vals.length];
 		for(int i=0;i<vals.length;i++) {

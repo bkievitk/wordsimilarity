@@ -8,6 +8,8 @@ import java.util.*;
 import javax.swing.*;
 import javax.swing.event.*;
 
+import cluster.Clustering;
+
 import relations.wordnet.WordRelatorWordNet;
 import tools.*;
 import wizard.Wizard;
@@ -23,6 +25,7 @@ public class MainGUIExternal extends MainGUI {
 	public JFrame renderingProgress = new JFrame("Rendering Progress");
 	public JFrame networkTools = new JFrame("Network Tools");
 	public JFrame showOptions = new JFrame("Options");
+	public JFrame clustering = new JFrame("Clustering");
 	public JFrame mainFrame = new JFrame();
 	public JFrame tutorial = new JFrame();
 		
@@ -34,7 +37,7 @@ public class MainGUIExternal extends MainGUI {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		new MainGUIExternal(false);		
+		final MainGUIExternal gui = new MainGUIExternal(false);	
 	}
 	
 	/**
@@ -101,6 +104,11 @@ public class MainGUIExternal extends MainGUI {
 		tutorial.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 		tutorial.setSize(800,600);
 		tutorial.add(new JScrollPane(new Tutorial()));
+		
+		clustering = new JFrame("Clustering");
+		clustering.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+		clustering.setSize(800,600);
+		clustering.add(new Clustering(wordMap, options));
 	}
 	
 	public MainGUIExternal(boolean startSetup) {	
@@ -147,7 +155,9 @@ public class MainGUIExternal extends MainGUI {
 		JScrollPane scroll = new JScrollPane(new PanelSelector(wordMap,240),JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		rightSide.add(scroll,BorderLayout.CENTER);
 		rightSide.add(new LegendGUI(options),BorderLayout.SOUTH);
-		add(visualizationPanel,BorderLayout.CENTER);
+		
+		//visualizationPanel.setPreferredSize(new Dimension(3300,2550));
+		add(new JScrollPane(visualizationPanel),BorderLayout.CENTER);
 				
 		if(startSetup) {
 			Object[] options = {"No words",
@@ -268,5 +278,10 @@ public class MainGUIExternal extends MainGUI {
 	
 	public void showRenderingProgress() {
 		renderingProgress.setVisible(true);
+	}
+
+	@Override
+	public void showClustering() {
+		clustering.setVisible(true);
 	}
 }

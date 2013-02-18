@@ -23,6 +23,7 @@ public class Options {
 	// Node coloring.
 	public static final int COLORING_CONSTANT = 0;
 	public static final int COLORING_POS = 1;
+	public static final int COLORING_OPEN = 2;
 	public int coloringType = COLORING_POS;
 	
 	// Word labeling.
@@ -82,7 +83,7 @@ public class Options {
 		"Spanish",
 		"Swedish",
 		"Turkish",};
-	
+
 	public static File getLanguageDir() {
 		return new File("resources/" + languages[language]);
 	}
