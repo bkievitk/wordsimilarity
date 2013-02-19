@@ -38,7 +38,7 @@ You will be returned to the main visualization panel. On the right hand side, a 
 
 *select tools->word manager from the menu*
 
-The [word manager] allows you to select the words that you wish to visualize. There are many different ways to select words, but we will simply select based on frequency (within the training corpora that were given).
+The [word_manager word manager] allows you to select the words that you wish to visualize. There are many different ways to select words, but we will simply select based on frequency (within the training corpora that were given).
 
 *select the count tab on the right. Then type 20 into the left, minimum box. Select add*
 
@@ -46,7 +46,7 @@ All words that occur 20 or more times should be added to the selected word list 
 
 *close the word selection window*
 
-All of the words have now been stacked on top of each other in the visualization. We need to place the nodes on the screen now to get meaning from them. While this can be done by hand (click and drag on a node to move it, or click and drag on the screen to pan), usually you will want to use a [layout manager].
+All of the words have now been stacked on top of each other in the visualization. We need to place the nodes on the screen now to get meaning from them. While this can be done by hand (click and drag on a node to move it, or click and drag on the screen to pan), usually you will want to use a [layout_manager layout manager].
 
 *select the layout menu, then select random layout to place the nodes randomly*
 
