@@ -1,0 +1,1 @@
+#summary Apply transform to similarity measure.
