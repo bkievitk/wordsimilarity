@@ -47,38 +47,7 @@ public class NetworkTools extends JTabbedPane {
 		addTab("Size vs Word Similarity",wordSimilarityOverSetSizeContainer());
 		addTab("Heatmap",heatMapContainer());
 	}
-	
-	public static void main(String[] args) {
 		
-		MainGUIExternal gui = new MainGUIExternal(false);	
-		
-		try {
-			IO.loadWorkSpace(gui.wordMap, new BufferedInputStream(new FileInputStream(new File("heatTest.w2w"))));
-		} catch(IOException e) {
-			e.printStackTrace();
-		}
-		
-		/*
-		BufferedImage image = new BufferedImage(800,100,BufferedImage.TYPE_INT_RGB);
-		Graphics g = image.getGraphics();
-		
-		for(int i=0;i<image.getWidth();i++) {
-			double p = i / (double)image.getWidth();
-			g.setColor(heatMapColor(p));
-			g.drawLine(i, 0, i, image.getHeight());
-		}
-		
-		PictureFrame.makeFrame(image);
-		*/
-		
-		/*
-		IO.loadWordSimilarity(gui.wordMap, new File("C:/Users/bkiev_000/Desktop/Brent/metaphysicsIEP.csv"));
-		IO.loadWordSimilarity(gui.wordMap, new File("C:/Users/bkiev_000/Desktop/Brent/metaphysicsSEP.csv"));
-		IO.loadWordSimilarity(gui.wordMap, new File("C:/Users/bkiev_000/Desktop/Brent/kantIEP.csv"));
-		IO.loadWordSimilarity(gui.wordMap, new File("C:/Users/bkiev_000/Desktop/Brent/kantSEP.csv"));	
-		*/	
-	}
-	
 	private static Color heatMapColor(double p) {
 		int r = (int)(255 - p * 255 * 3 / 2);
 		int gr = (int)((1 - Math.abs(.5 - p)) * 255 * 2 / 3);
