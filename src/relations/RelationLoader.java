@@ -14,6 +14,7 @@ import relations.beagle.WordRelatorBEAGLE;
 import relations.helpers.WordRelationCrystalized;
 import relations.helpers.WordRelatorAverage;
 import relations.helpers.WordRelatorFull;
+import relations.helpers.WordRelatorNormalize;
 import relations.holoc.WordRelatorContinuousHolographic;
 import relations.ngram.WordRelatorNGram;
 import relations.sspace.*;
@@ -44,6 +45,7 @@ public class RelationLoader {
 		relationTypes.add(WordRelatorRandomIndexing.class);
 		relationTypes.add(WordRelatorContinuousHolographic.class);
 		relationTypes.add(WordRelatorAverage.class);
+		relationTypes.add(WordRelatorNormalize.class);
 	}
 	
 	public void addRelationType(@SuppressWarnings("rawtypes") Class relationType) {

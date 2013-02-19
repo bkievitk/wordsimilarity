@@ -12,7 +12,7 @@ public class VectorTools {
 
 	public static Random rand = new Random();
 
-	public static double[][] copy(double[][] v) {
+	public static double[][] copy(double[][] v)  {
 		double[][] ret = new double[v.length][];
 		for(int i=0;i<v.length;i++) {
 			ret[i] = new double[v[i].length];
