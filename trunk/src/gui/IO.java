@@ -116,8 +116,9 @@ public class IO {
 	
 	public static void saveWordList(final WordMap wordMap, final OutputStream writer) throws IOException {
 		BufferedWriter w = new BufferedWriter(new OutputStreamWriter(writer));
+		w.write("name,count,pos\n");
 		for(WordNode node : wordMap.activeWordsSorted) {
-			w.write(node.word + "\n");
+			w.write(node.word + "," + node.getCount() + "," + node.getPoS() + "\n");
 		}
 		w.close();
 	}

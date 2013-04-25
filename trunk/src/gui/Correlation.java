@@ -169,8 +169,8 @@ public class Correlation {
 					a[x][y] = 0;
 					b[x][y] = 0;
 				} else {
-					a[x][y] = Math.max(0.1, Math.min(.99, 1 - a[x][y]));
-					b[x][y] = Math.max(0.1, Math.min(.99, 1 - b[x][y]));
+					a[x][y] = Math.max(0.01, Math.min(.99, 1 - a[x][y]));
+					b[x][y] = Math.max(0.01, Math.min(.99, 1 - b[x][y]));
 				}
 			}	
 		}		

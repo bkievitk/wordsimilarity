@@ -61,7 +61,23 @@ public class AdvancedMenu {
 		menu.add(buildLayoutMenu(main.wordMap, main));
 		menu.add(buildConnectionMenu(main));	
 		menu.add(buildHelpMenu(main));	
+		menu.add(activeMenu(main));	
 		return menu;
+	}
+	
+	public static JMenu activeMenu(final MainGUI main) {
+		JMenu active = new JMenu("Active");
+
+			// Save worspace.
+			JMenuItem spring = new JMenuItem("Spring (experimental)");
+				spring.addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent arg0) {
+						new active.SpringLayout(main);
+					}
+				});
+			active.add(spring);
+			
+		return active;
 	}
 	
 	/**
@@ -72,6 +88,8 @@ public class AdvancedMenu {
 	public static JMenu buildFileMenu(final WordMap wordMap, final MainGUI main) {
 
 		JMenu file = new JMenu("File");
+		file.setMnemonic('F');
+		//openItem.setAccelerator(KeyStroke.getKeyStroke("control O"));
 		
 			// Simply clear all relations and words.
 			JMenuItem newMenu = new JMenuItem("New");
@@ -485,8 +503,11 @@ public class AdvancedMenu {
 	public static JMenu buildToolsMenu(final MainGUI main) {
 
 		JMenu tools = new JMenu("Tools");
+		tools.setMnemonic('T');
 			
 			JMenuItem wizard = new JMenuItem("Similarity Wizard");
+			wizard.setMnemonic('S');
+			
 			wizard.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent arg0) {
 					main.showWizardFrame();
@@ -495,6 +516,8 @@ public class AdvancedMenu {
 			tools.add(wizard);
 				
 			JMenuItem wordManager = new JMenuItem("Word Manager");
+			wordManager.setMnemonic('W');
+			
 			wordManager.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent arg0) {
 					main.showWordFrame();
@@ -503,6 +526,8 @@ public class AdvancedMenu {
 			tools.add(wordManager);
 						
 			JMenuItem networkToolsMenu = new JMenuItem("Network Tools");
+			networkToolsMenu.setMnemonic('N');
+			
 			networkToolsMenu.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent arg0) {
 					main.showNetworkTools();
@@ -511,6 +536,8 @@ public class AdvancedMenu {
 			tools.add(networkToolsMenu);
 
 			JMenuItem showOptionsMenu = new JMenuItem("Show Options");
+			showOptionsMenu.setMnemonic('O');
+			
 			showOptionsMenu.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent arg0) {
 					main.showOptions();
@@ -519,6 +546,8 @@ public class AdvancedMenu {
 			tools.add(showOptionsMenu);
 			
 			JMenuItem clusterMenu = new JMenuItem("Clustering");
+			clusterMenu.setMnemonic('C');
+			
 			clusterMenu.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent arg0) {
 					main.showClustering();
@@ -536,6 +565,7 @@ public class AdvancedMenu {
 	 */
 	public static JMenu buildRenderMenu(final MainGUI main) {
 		JMenu render = new JMenu("Render");
+		render.setMnemonic('R');
 		
 		JMenuItem renderNow = new JMenuItem("Render Once");
 		renderNow.addActionListener(new ActionListener() {
@@ -576,8 +606,11 @@ public class AdvancedMenu {
 	public static JMenu buildLayoutMenu(final WordMap wordMap, final MainGUI main) {
 		
 		JMenu layout = new JMenu("Layout");
-		
+		layout.setMnemonic('L');
+
 		JMenuItem randomize = new JMenuItem("Random Layout");
+		randomize.setMnemonic('R');
+		
 		randomize.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				Layouts.layoutRandom(wordMap, main.visualizationPanel.getSize());
@@ -587,6 +620,8 @@ public class AdvancedMenu {
 		layout.add(randomize);
 
 		JMenuItem grid = new JMenuItem("Grid Layout");
+		grid.setMnemonic('G');
+		
 		grid.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				Layouts.layoutGrid(wordMap, main.visualizationPanel.getSize());
@@ -596,6 +631,8 @@ public class AdvancedMenu {
 		layout.add(grid);
 		
 		JMenuItem centered = new JMenuItem("Word Centered Layout");
+		centered.setMnemonic('W');
+		
 		centered.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				
@@ -624,6 +661,8 @@ public class AdvancedMenu {
 		layout.add(centered);			
 
 		JMenuItem mds = new JMenuItem("MDS Layout");
+		mds.setMnemonic('M');
+		
 		mds.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				WordRelator wordRelator = (WordRelator)JOptionPane.showInputDialog(
@@ -643,6 +682,8 @@ public class AdvancedMenu {
 		layout.add(mds);
 		
 		JMenuItem procrustes = new JMenuItem("Procrustes Layout");
+		procrustes.setMnemonic('P');
+		
 		procrustes.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				WordRelator wr1 = (WordRelator)JOptionPane.showInputDialog(
@@ -743,6 +784,8 @@ public class AdvancedMenu {
 		layout.add(procrustes);
 		
 		JMenuItem tsne = new JMenuItem("tSNE Layout");
+		tsne.setMnemonic('T');
+		
 		tsne.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				WordRelator wordRelator = (WordRelator)JOptionPane.showInputDialog(
@@ -762,6 +805,8 @@ public class AdvancedMenu {
 		layout.add(tsne);
 		
 		JMenuItem fit = new JMenuItem("Fit Screen");
+		fit.setMnemonic('F');
+		
 		fit.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {					
 				Layouts.layoutFitScreen(wordMap, main.visualizationPanel.getSize());
@@ -771,6 +816,8 @@ public class AdvancedMenu {
 		layout.add(fit);
 		
 		JMenuItem binary = new JMenuItem("Sided Layout");
+		binary.setMnemonic('S');
+		
 		binary.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {		
 				
@@ -800,6 +847,8 @@ public class AdvancedMenu {
 		layout.add(binary);
 		
 		JMenuItem split = new JMenuItem("Split Layout");
+		split.setMnemonic('L');
+		
 		split.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {		
 				WordRelator wordRelator = (WordRelator)JOptionPane.showInputDialog(
@@ -927,6 +976,7 @@ public class AdvancedMenu {
 	public static JMenu buildConnectionMenu(final MainGUI main) {
 
 		JMenu connectionType = new JMenu("Connection");
+		connectionType.setMnemonic('C');
 		
 			JMenuItem connLine = new JMenuItem("Line");
 			connLine.addActionListener(new ActionListener() {
