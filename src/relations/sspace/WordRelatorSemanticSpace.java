@@ -33,10 +33,10 @@ public abstract class WordRelatorSemanticSpace extends WordRelator {
 	
 	public static void main(String[] args) {
 		try {
-			SemanticSpace semanticSpace = new ExplicitSemanticAnalysis();					// *Works
+			//SemanticSpace semanticSpace = new ExplicitSemanticAnalysis();					// *Works
 			//SemanticSpace semanticSpace = new FixedDurationTemporalRandomIndexing(); 		// *Works
 			//SemanticSpace semanticSpace = new HyperspaceAnalogueToLanguage(); 			// *Works
-			//SemanticSpace semanticSpace = new LatentSemanticAnalysis();					// *Works
+			SemanticSpace semanticSpace = new LatentSemanticAnalysis();					// *Works
 			//SemanticSpace semanticSpace = new RandomIndexing(); 							// Works
 			//SemanticSpace semanticSpace = new Coals(); 									// Works (slow?)
 			//SemanticSpace semanticSpace = new PurandareFirstOrder(); 						// Error: Cannot run program "vcluster": CreateProcess error=2, The system cannot find the file specified
@@ -73,7 +73,7 @@ dog car
 frog wolf
 			 */
 			Properties properties = new Properties();
-			properties.setProperty(LatentSemanticAnalysis.LSA_DIMENSIONS_PROPERTY, "5");
+			properties.setProperty(LatentSemanticAnalysis.LSA_DIMENSIONS_PROPERTY, "200");
 			properties.setProperty(LatentSemanticAnalysis.RETAIN_DOCUMENT_SPACE_PROPERTY, "true");
 			
 			semanticSpace.processSpace(properties);
@@ -213,7 +213,12 @@ frog wolf
 		super.learn(sentence);
 		
 		try {
-			semanticSpace.processDocument(new BufferedReaderFormatted(new StringReader(join(sentence)),cleaners));
+			String joined = join(sentence);
+			joined = joined.trim();
+			
+			if(joined.length() > 0) {
+				semanticSpace.processDocument(new BufferedReaderFormatted(new StringReader(join(sentence)),cleaners));
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
