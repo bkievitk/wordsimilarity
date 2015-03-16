@@ -1,0 +1,1 @@
+The active language can be selected through the main menu. Select file->language and then select your desired language. The active language will be used only in pre-processing the data. It will be used when generating a model for selecting characters, a stoplist and a stemmer.
